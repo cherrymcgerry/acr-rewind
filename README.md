@@ -13,8 +13,11 @@ carry on driving from the moment you pick, with the speed it had then.
 > you are offline, it stays off. Do not try to use it for anything competitive: rewinding
 > changes your result, and leaderboard times must stay clean.
 
-<!-- TODO: demo GIF or video link -->
-*Demo video: coming soon.*
+![ACR Rewind demo: going off at a fence, rewinding along the on-screen timeline, and resuming](docs/media/demo.gif)
+
+*The full demo video (with sound) is below.*
+
+<!-- VIDEO: drag github.mp4 here in the GitHub web editor -->
 
 ## Features
 
