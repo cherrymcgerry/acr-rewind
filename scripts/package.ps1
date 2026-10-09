@@ -101,7 +101,20 @@ try {
     $readme = [IO.File]::ReadAllText((Join-Path $root 'README.md')) -replace "`r`n", "`n"
     $cut = $readme.IndexOf("`n## For developers")
     if ($cut -lt 0) { throw "README.md has no '## For developers' section to cut at" }
-    $readme = $readme.Substring(0, $cut).TrimEnd() + "`n`n## Source code`n`nACR Rewind is open source; the source code and developer documentation are on GitHub: https://github.com/cherrymcgerry/acr-rewind`n"
+    $readme = $readme.Substring(0, $cut)
+    # Media (GIF, attached video, its captions) doesn't work in the zip: replace it with one link.
+    $readme = [regex]::Replace($readme, '(?s)<!--.*?-->', '')
+    $demoLinked = $false
+    $kept = foreach ($line in $readme -split "`n") {
+        if ($line -match '^\s*!\[' -or $line -match 'https://github\.com/user-attachments/' -or $line -match '(?i)demo video') {
+            if (-not $demoLinked) { 'Demo video: https://github.com/cherrymcgerry/acr-rewind#readme'; $demoLinked = $true }
+        } else { $line }
+    }
+    $readme = [regex]::Replace(($kept -join "`n"), "\n{3,}", "`n`n")
+    $readme = $readme.TrimEnd() + "`n`n## Source code`n`nACR Rewind is open source; the source code and developer documentation are on GitHub: https://github.com/cherrymcgerry/acr-rewind`n"
+    foreach ($bad in '![', '<!--', 'user-attachments') {
+        if ($readme.Contains($bad)) { throw "player README.md still contains '$bad'" }
+    }
     [IO.File]::WriteAllText((Join-Path $player 'README.md'), $readme, [Text.UTF8Encoding]::new($false))
     Write-Host '    + README.md (player section)'
 
