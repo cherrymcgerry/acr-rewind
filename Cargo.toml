@@ -1,0 +1,50 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/rewind_core",
+    "crates/acr_shm",
+    "crates/acr_ue",
+    "crates/acr_hook",
+    "crates/acr_loader",
+    "crates/acr_probe",
+]
+
+[workspace.package]
+version = "0.1.0-beta.1"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+authors = ["ACR Rewind contributors"]
+description = "Forza-style rewind mod for Assetto Corsa Rally (offline / single-player only)"
+readme = "README.md"
+repository = "https://github.com/cherrymcgerry/acr-rewind"
+rust-version = "1.80"
+
+[workspace.dependencies]
+glam = { version = "0.29", features = ["serde"] }
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+thiserror = "1"
+windows = "0.58"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt", "std", "env-filter"] }
+retour = "0.3"
+hudhook = { version = "0.9", default-features = false, features = ["dx12", "dx11"] }
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+serde_json = "1"
+rayon = "1"
+toml_edit = "0.22"
+memchr = "2"
+rewind_core = { path = "crates/rewind_core" }
+acr_shm = { path = "crates/acr_shm" }
+acr_ue = { path = "crates/acr_ue" }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+# acr_hook catches panics at every FFI entry point and disables itself; abort would kill the game.
+panic = "unwind"
+debug = 1
+
+[profile.dev]
+panic = "unwind"

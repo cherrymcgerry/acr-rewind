@@ -1,0 +1,135 @@
+<#
+.SYNOPSIS
+    Regenerates THIRD_PARTY_NOTICES.md from Cargo.lock.
+
+.DESCRIPTION
+    Walks the resolved dependency graph of every workspace member for x86_64-pc-windows-msvc
+    (normal and build dependencies; dev-dependencies are skipped), and writes one row per crate
+    with its declared license, followed by the license texts shipped in each crate's source
+    (top-level LICENSE*/COPYING*/NOTICE* files, plus LICENSE* files of code bundled under
+    vendor/ or third-party/). Identical texts are printed once with the crates that use them.
+    Sources come from the local cargo registry, so run `cargo fetch` first on a fresh machine.
+
+    Run it again whenever Cargo.lock changes:
+        powershell -ExecutionPolicy Bypass -File scripts\third-party-notices.ps1
+#>
+[CmdletBinding()]
+param(
+    [string]$Output
+)
+
+$ErrorActionPreference = 'Stop'
+$env:Path += ";$HOME\.cargo\bin"
+
+$root = Split-Path -Parent $PSScriptRoot
+if (-not $Output) { $Output = Join-Path $root 'THIRD_PARTY_NOTICES.md' }
+
+Push-Location $root
+try {
+    $json = cargo metadata --format-version 1 --locked --filter-platform x86_64-pc-windows-msvc
+    if ($LASTEXITCODE -ne 0) { throw "cargo metadata failed ($LASTEXITCODE)" }
+    $meta = $json | ConvertFrom-Json
+
+    $pkgById = @{}
+    foreach ($p in $meta.packages) { $pkgById[$p.id] = $p }
+    $nodeById = @{}
+    foreach ($n in $meta.resolve.nodes) { $nodeById[$n.id] = $n }
+    $members = @{}
+    foreach ($id in $meta.workspace_members) { $members[$id] = $true }
+
+    # Reachable non-dev dependencies of the workspace members.
+    $seen = @{}
+    $queue = [System.Collections.Generic.Queue[string]]::new()
+    foreach ($id in $meta.workspace_members) { $queue.Enqueue($id) }
+    while ($queue.Count -gt 0) {
+        $id = $queue.Dequeue()
+        foreach ($d in $nodeById[$id].deps) {
+            # kind is null for normal dependencies, "build" or "dev" otherwise.
+            $nonDev = @($d.dep_kinds | Where-Object { $_.kind -ne 'dev' }).Count
+            if ($nonDev -eq 0) { continue }
+            if (-not $seen.ContainsKey($d.pkg)) {
+                $seen[$d.pkg] = $true
+                $queue.Enqueue($d.pkg)
+            }
+        }
+    }
+
+    $deps = $seen.Keys | Where-Object { -not $members.ContainsKey($_) } |
+        ForEach-Object { $pkgById[$_] } | Sort-Object name, version
+
+    $texts = [ordered]@{}   # hash -> @{ Text; Users }
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    function Add-Text([string]$path, [string]$user) {
+        $raw = [IO.File]::ReadAllText($path) -replace "`r`n", "`n"
+        $raw = $raw.Trim()
+        if (-not $raw) { return }
+        $key = [BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($raw)))
+        if (-not $texts.Contains($key)) { $texts[$key] = @{ Text = $raw; Users = [System.Collections.Generic.List[string]]::new() } }
+        if (-not $texts[$key].Users.Contains($user)) { $texts[$key].Users.Add($user) }
+    }
+
+    $rows = foreach ($p in $deps) {
+        $dir = Split-Path -Parent $p.manifest_path
+        $label = "$($p.name) $($p.version)"
+        $files = @(Get-ChildItem -LiteralPath $dir -File |
+            Where-Object { $_.Name -match '^(LICEN[CS]E|COPYING|NOTICE|UNLICENSE)' })
+        if ($p.license_file) {
+            $lf = Join-Path $dir $p.license_file
+            if ((Test-Path -LiteralPath $lf) -and -not ($files.FullName -contains (Resolve-Path -LiteralPath $lf).Path)) {
+                $files += Get-Item -LiteralPath $lf
+            }
+        }
+        foreach ($f in $files) { Add-Text $f.FullName $label }
+        foreach ($sub in 'vendor', 'third-party') {
+            $sd = Join-Path $dir $sub
+            if (-not (Test-Path -LiteralPath $sd)) { continue }
+            Get-ChildItem -LiteralPath $sd -Recurse -File |
+                Where-Object { $_.Name -match '^(LICEN[CS]E|COPYING)' } |
+                ForEach-Object {
+                    $rel = $_.Directory.FullName.Substring($dir.Length + 1) -replace '\\', '/'
+                    Add-Text $_.FullName "$label (bundled: $rel)"
+                }
+        }
+        $license = if ($p.license) { $p.license } elseif ($p.license_file) { "see $($p.license_file)" } else { 'UNKNOWN' }
+        $repo = if ($p.repository) { $p.repository } else { '' }
+        "| $($p.name) | $($p.version) | $license | $repo |"
+    }
+
+    $sb = [System.Text.StringBuilder]::new()
+    [void]$sb.AppendLine('# Third-party notices')
+    [void]$sb.AppendLine()
+    [void]$sb.AppendLine('ACR Rewind is licensed under MIT OR Apache-2.0 (see LICENSE-MIT and LICENSE-APACHE).')
+    [void]$sb.AppendLine('Its binaries include the open-source Rust crates listed below, built for')
+    [void]$sb.AppendLine('x86_64-pc-windows-msvc. Where a crate is offered under a choice of licenses, ACR Rewind uses')
+    [void]$sb.AppendLine('it under any one of them; all license texts found in the crate sources are reproduced below.')
+    [void]$sb.AppendLine()
+    [void]$sb.AppendLine('This file is generated by `scripts/third-party-notices.ps1` from `Cargo.lock`; do not edit it by hand.')
+    [void]$sb.AppendLine()
+    [void]$sb.AppendLine("## Crates ($(@($deps).Count))")
+    [void]$sb.AppendLine()
+    [void]$sb.AppendLine('| Crate | Version | License | Repository |')
+    [void]$sb.AppendLine('|---|---|---|---|')
+    foreach ($r in $rows) { [void]$sb.AppendLine($r) }
+    [void]$sb.AppendLine()
+    [void]$sb.AppendLine('## License texts')
+    $i = 0
+    foreach ($k in $texts.Keys) {
+        $i++
+        $t = $texts[$k]
+        [void]$sb.AppendLine()
+        [void]$sb.AppendLine("### Text $i")
+        [void]$sb.AppendLine()
+        [void]$sb.AppendLine("Used by: $($t.Users -join ', ')")
+        [void]$sb.AppendLine()
+        [void]$sb.AppendLine('```text')
+        [void]$sb.AppendLine($t.Text)
+        [void]$sb.AppendLine('```')
+    }
+
+    $out = $sb.ToString() -replace "`r`n", "`n"
+    [IO.File]::WriteAllText($Output, $out, [Text.UTF8Encoding]::new($false))
+    Write-Host "==> wrote $Output ($(@($deps).Count) crates, $($texts.Count) distinct license texts)"
+}
+finally {
+    Pop-Location
+}

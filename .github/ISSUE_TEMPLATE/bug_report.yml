@@ -1,0 +1,84 @@
+name: Bug report
+description: Something doesn't work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! ACR Rewind is **offline / single-player only**; reports about online
+        or leaderboard modes are out of scope (the mod is meant to stay off there).
+        Please remove personal information (user names, paths) from anything you paste.
+
+  - type: input
+    id: game-build
+    attributes:
+      label: Game build
+      description: Steam build id or game version (e.g. 25170642 / Early Access 0.6). acr-rewind.log prints it at the start of each session ("game build ...").
+      placeholder: "25170642 (EA 0.6)"
+    validations:
+      required: true
+
+  - type: input
+    id: mod-version
+    attributes:
+      label: Mod version
+      description: From the zip name or CHANGELOG.md.
+      placeholder: "0.1.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: input-device
+    attributes:
+      label: Input device
+      multiple: true
+      options:
+        - Keyboard
+        - Xbox / XInput pad
+        - PlayStation pad
+        - Wheel / pedals (DirectInput)
+        - Button box / other DirectInput device
+    validations:
+      required: true
+
+  - type: input
+    id: device-model
+    attributes:
+      label: Device model
+      description: For wheels and other DirectInput devices, the model name (as shown in the F8 settings panel under Devices).
+      placeholder: "e.g. Fanatec CSL DD, Moza R9"
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Game mode, stage, and what you pressed.
+      placeholder: |
+        1. Free Roam, Greece stage
+        2. Drive at ~80 km/h, press Rewind
+        3. Scrub back 3 s, press Resume
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-actual
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+
+  - type: textarea
+    id: log
+    attributes:
+      label: acr-rewind.log
+      description: |
+        Attach acr-rewind.log from <ACR>\acr\Binaries\Win64\ (drag the file into this box).
+        New sessions are appended to the end of the file; attach it right after the problem happens.
+    validations:
+      required: true
+
+  - type: textarea
+    id: other-mods
+    attributes:
+      label: Other mods or overlays
+      description: UE4SS, ReShade, other DLL mods, telemetry tools, etc.

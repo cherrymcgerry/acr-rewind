@@ -1,0 +1,5 @@
+# Link the MSVC C runtime statically so players don't need the VC++ redistributable.
+# Cargo reads this for every build in the repository, including CI and the release workflow;
+# a RUSTFLAGS environment variable would override it, so the workflows don't set one.
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]

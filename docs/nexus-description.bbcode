@@ -1,0 +1,103 @@
+[center][size=6][b]ACR Rewind[/b][/size] [size=4][color=#ffc000][b]BETA[/b][/color][/size]
+[size=4]Forza Horizon-style rewind for Assetto Corsa Rally[/size]
+
+[size=3][color=#ff6060][b]OFFLINE / SINGLE-PLAYER ONLY[/b][/color] - the mod switches itself off online and in leaderboard modes.[/size][/center]
+
+[line]
+
+[quote][b]Beta (0.1.0-beta.1).[/b] Rewinding works end to end on the supported game build, but it has only been tested with a few cars and stages so far. Please report problems in the Bugs tab (see Troubleshooting).[/quote]
+
+Went off at the last hairpin? Press [b]Rewind[/b]: the game freezes, you scrub the car back along the last 30 seconds of its path, and you carry on driving from the moment you pick, with the speed it had then.
+
+[youtube]VIDEO_ID_PLACEHOLDER[/youtube]
+
+[size=5][b]Features[/b][/size]
+[list]
+[*]Freeze, scrub back and forward through the last 30 s, then [b]resume[/b] from any point or [b]cancel[/b] back to the present.
+[*]Analog scrubbing on the triggers or pedals, with an adjustable speed curve.
+[*]Keyboard, Xbox and PlayStation pads, and wheels, button boxes and pedals (DirectInput).
+[*]In-game settings panel ([b]F8[/b]) to bind any button and tune scrub speed; saved to the config file.
+[*]Online / leaderboard guard: rewind is disabled in online sessions, replays, Time Attack, Challenges and ACR Events. If the mod can't confirm you are offline, it stays off.
+[*]Fails safe: if a game update breaks compatibility, or restores keep failing, the mod disables itself and writes the reason to its log.
+[*]No game files are modified. No extra runtimes needed. Open source (MIT / Apache-2.0).
+[/list]
+
+[size=5][b]Requirements[/b][/size]
+[list]
+[*]Windows 10 or 11, 64-bit.
+[*][b]Steam[/b] version of Assetto Corsa Rally, [b]Early Access v0.6 - Steam build 25170642[/b].
+[*]No extra runtimes: the C runtime is built in, so no Visual C++ redistributable is needed.
+[*]No other mod that installs its own [b]dwmapi.dll[/b] (e.g. UE4SS).
+[/list]
+
+[size=5][b]Installation[/b][/size]
+[list=1]
+[*][b]If you use UE4SS, remove it first[/b] - it uses the same dwmapi.dll file name.
+[*]Extract the archive.
+[*]Copy [b]dwmapi.dll[/b], [b]acr_hook.dll[/b], [b]acr-rewind.toml[/b] and [b]signatures.toml[/b] into:
+[code]<Assetto Corsa Rally>\acr\Binaries\Win64\[/code]
+(next to acr.exe; in Steam: right-click the game > Manage > Browse local files)
+[*]Start the game in an offline mode (Free Roam, Practice, Rally School).
+[/list]
+Mod managers: install manually to the folder above (the files must sit next to acr.exe).
+
+[size=5][b]Controls[/b][/size]
+[list]
+[*][b]Rewind[/b] (enter the mode): [b]R[/b] / Xbox [b]View[/b] / PlayStation [b]Create[/b]
+[*][b]Scrub back / forward[/b]: [b]Left / Right[/b] / [b]LT / RT[/b] / [b]L2 / R2[/b] (analog - press harder to scrub faster)
+[*][b]Resume[/b] from the cursor: [b]Enter[/b] / [b]A[/b] / [b]Cross[/b]
+[*][b]Cancel[/b] (back to the present): [b]Backspace[/b], or press Rewind again
+[*][b]Settings panel[/b]: [b]F8[/b] - bind wheel buttons, hats and pedals here (wheels have no default bindings)
+[/list]
+[quote]The game still sees the triggers while the car is frozen, so the scrub triggers are also throttle and brake. If you are on the throttle when you resume, the car pulls away at once. Set [b]resume_requires_release = true[/b] in acr-rewind.toml to make Resume wait until the triggers are released.[/quote]
+
+[size=5][b]Known limitations[/b][/size]
+[list]
+[*][b]Beta:[/b] tested so far only with the [b]VW Polo GTI R5[/b] on a few stages. Other cars are expected to work, but haven't been verified yet.
+[*]Engine RPM and gear are not restored directly (the game has no way to set them). A short run-in while resuming spins the engine and tyres back up, so the car may need a moment to settle.
+[*]Scrubbing can be choppy in dense vegetation, where a crash spawns a lot of debris.
+[*][b]UE4SS conflicts[/b]: same dwmapi.dll file name, so the two can't be installed together.
+[*][b]Steam Deck / Linux (Proton): untested.[/b] It would need the launch option [code]WINEDLLOVERRIDES="dwmapi=n,b" %command%[/code]
+[*]Overlays that hook DirectX, such as RivaTuner Statistics Server (RTSS), may conflict with the mod's overlay. If the game crashes or the overlay doesn't appear, try disabling them.
+[*]Rewind is unavailable in replays, online sessions and leaderboard modes, by design.
+[/list]
+
+[size=5][b]Compatibility after game updates[/b][/size]
+Verified on [b]Steam build 25170642 (Early Access v0.6)[/b]. The mod relies on memory locations that are specific to one game build, and these usually move when the game updates. When that happens, the mod notices at startup, logs the reason and [b]disables itself[/b]; the game runs normally without rewind. Wait for an updated version here (usually just a new signatures.toml), or remove the mod in the meantime.
+
+[size=5][b]Offline only - please read[/b][/size]
+[color=#ff6060]Rewinding changes your result. Do [b]not[/b] use ACR Rewind online, in Time Attack, Challenges, ACR Events or anything with a leaderboard.[/color] The built-in guard switches the mod off in those modes, but it is your responsibility to keep leaderboards clean. Use at your own risk.
+
+[size=5][b]Troubleshooting[/b][/size]
+Everything is logged to [b]acr-rewind.log[/b], next to the DLLs in [b]acr\Binaries\Win64[/b] (new sessions are appended to the end). No log file at all means the loader didn't run (wrong folder, or another dwmapi.dll replaced it).
+
+[b]Reporting a bug[/b] (Bugs tab or GitHub issues), please include:
+[list]
+[*]acr-rewind.log (attach the file right after the problem happened);
+[*]game build (printed at the start of each session in the log) and mod version;
+[*]input device (keyboard, pad model, wheel model);
+[*]car, stage, and what you did.
+[/list]
+
+[size=5][b]Antivirus warnings and checksums[/b][/size]
+Some antivirus programs flag DLL-proxy loaders like dwmapi.dll (a DLL that loads another DLL into a game) as suspicious. This is a known false positive for this kind of mod. The source code is public, and release zips are built from it by GitHub Actions. SHA-256 checksums of the release zip are listed below and in SHA256SUMS.txt on the GitHub release; check yours with [b]Get-FileHash <file>[/b] in PowerShell.
+[code]SHA256 (ACR-Rewind-0.1.0-beta.1.zip) = SHA256_PLACEHOLDER[/code]
+VirusTotal report: VIRUSTOTAL_LINK_PLACEHOLDER
+
+[size=5][b]Uninstall[/b][/size]
+Delete [b]dwmapi.dll[/b], [b]acr_hook.dll[/b], [b]acr-rewind.toml[/b], [b]signatures.toml[/b] and [b]acr-rewind.log[/b] from acr\Binaries\Win64. Nothing else is changed.
+
+[size=5][b]Source code[/b][/size]
+ACR Rewind is open source (MIT OR Apache-2.0): [url=https://github.com/cherrymcgerry/acr-rewind]GitHub - ACR Rewind[/url]
+Bug reports and pull requests are welcome there.
+
+[size=5][b]Disclaimer[/b][/size]
+ACR Rewind is an unofficial fan project and is [b]not affiliated with or endorsed by KUNOS Simulazioni, Supernova Games Studios, 505 Games, Valve, or Nexus Mods[/b]. "Assetto Corsa" and "Assetto Corsa Rally" are trademarks of their respective owners. The mod reads and writes the game's memory while it runs; use it offline only and at your own risk. Provided "as is", without warranty of any kind.
+
+[size=5][b]Credits[/b][/size]
+[list]
+[*][url=https://github.com/Encryqed/Dumper-7]Dumper-7[/url] by Encryqed - used as a development tool to map the game's engine structures (not included or redistributed).
+[*][url=https://github.com/veeenu/hudhook]hudhook[/url] and [url=https://github.com/ocornut/imgui]Dear ImGui[/url] - in-game overlay.
+[*][url=https://github.com/Hpmason/retour-rs]retour[/url] - function detours.
+[*]Full third-party license list: THIRD_PARTY_NOTICES.md in the download.
+[/list]

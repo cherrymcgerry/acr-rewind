@@ -1,0 +1,34 @@
+[package]
+name = "acr_probe"
+description = "Read-only external inspection of a running acr.exe for reverse engineering (never writes)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "acr-probe"
+path = "src/main.rs"
+
+[dependencies]
+acr_shm.workspace = true
+acr_ue.workspace = true
+anyhow.workspace = true
+glam.workspace = true
+clap.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+rayon.workspace = true
+toml_edit.workspace = true
+memchr.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+windows = { workspace = true, features = [
+    "Win32_Foundation",
+    "Win32_System_Threading",
+    "Win32_System_Memory",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Diagnostics_Debug",
+    "Win32_System_Diagnostics_ToolHelp",
+] }

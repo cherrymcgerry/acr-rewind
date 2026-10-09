@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    name: fmt, clippy, test, build
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install toolchain (rust-toolchain.toml)
+        run: rustup toolchain install
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: cargo fmt
+        run: cargo fmt --all -- --check
+
+      - name: cargo clippy
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+
+      - name: cargo test
+        run: cargo test --workspace --locked
+
+      - name: cargo build --release
+        run: cargo build --workspace --release --locked
+
+      - name: THIRD_PARTY_NOTICES.md is up to date
+        run: |
+          ./scripts/third-party-notices.ps1
+          git diff --exit-code -- THIRD_PARTY_NOTICES.md
+          if ($LASTEXITCODE -ne 0) { throw 'THIRD_PARTY_NOTICES.md is stale: run scripts/third-party-notices.ps1 and commit it' }
+
+      - name: Package (smoke test)
+        run: ./scripts/package.ps1 -SkipBuild

@@ -1,0 +1,29 @@
+[package]
+name = "acr_loader"
+description = "dwmapi.dll proxy loader and development injector for acr_hook.dll"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+# Output is dwmapi.dll so the game loads this proxy in place of the system DLL.
+[lib]
+name = "dwmapi"
+crate-type = ["cdylib"]
+
+[[bin]]
+name = "injector"
+path = "src/bin/injector.rs"
+
+[target.'cfg(windows)'.dependencies]
+windows = { workspace = true, features = [
+    "Win32_Foundation",
+    "Win32_Security",
+    "Win32_System_LibraryLoader",
+    "Win32_System_SystemServices",
+    "Win32_System_Memory",
+    "Win32_System_Threading",
+    "Win32_System_Diagnostics_Debug",
+    "Win32_System_Diagnostics_ToolHelp",
+] }

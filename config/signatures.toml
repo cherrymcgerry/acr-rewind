@@ -1,0 +1,425 @@
+# acr-rewind :: game-specific signatures, offsets and reflection names
+#
+# Loaded by crates/acr_ue at injection time. EVERYTHING game-specific lives here so a
+# game patch only requires editing this file (see docs/re-notes.md for how to refresh it).
+#
+# STATUS: VERIFIED IN-GAME ON BUILD 25170642 (ACR Early Access v0.6, UE 5.6.1).
+# The [raw_offsets] engine globals (GObjects, FNamePool, GWorld, ProcessEvent), the
+# FField/FProperty layout, the rigid-body vtable/layout, the car_avatar UFunctions and the
+# UE -> sim axis map were all exercised by the mod in-process with live rewinds on that build
+# (docs/re-notes.md §8, §9). Items marked VERIFIED below were confirmed live; byte patterns are
+# generic UE5 fallbacks that only run when a raw offset fails validation, and stay UNVERIFIED.
+# The loader fails safe (disables the mod and logs why) when a required item can't be resolved
+# or fails its sanity check, e.g. after a game update.
+#
+# Conventions
+#   * Patterns: space-separated hex bytes, "??" = wildcard byte (a single "?" is also accepted).
+#   * Integers may be written as hex (0x...) — TOML supports this natively.
+#   * "rva" = offset from the base of [module].name. Absent key = "not known" (Option::None).
+#   * Resolution order per section: [raw_offsets] override  ->  strategy  ->  fail.
+
+schema_version = 1
+# Steam buildid this file was verified against. "" = never verified. The loader should warn
+# (and, if `require_build_match = true`, refuse to run) when the running build differs.
+verified_build = "25170642"        # VERIFIED live: sig-test + in-game rewinds
+target_build = "25170642"          # build installed when this file was written (ACR v0.6)
+engine_version = "5.6"
+require_build_match = false
+
+[module]
+name = "acr.exe"                    # main module to scan (monolithic shipping exe, renamed)
+original_filename = "acr-Win64-Shipping.exe"   # PE VersionInfo OriginalFilename, used as a sanity check
+scan_sections = [".text"]           # sections searched for code patterns
+
+# ---------------------------------------------------------------------------------------
+# Shared candidate format used by gobjects / fnamepool / gworld / process_event / world_tick:
+#
+#   [[<section>.candidates]]
+#   pattern     = "48 8B 05 ?? ?? ?? ?? ..."   # required
+#   kind        = "rip_relative"   # "rip_relative" | "call_rel32" | "direct"
+#                                  #  rip_relative: target = match + disp_offset + 4 + rel32 ... see below
+#                                  #  call_rel32  : same math, for E8/E9 rel32 call/jmp targets
+#                                  #  direct      : target = match address itself (function start)
+#   disp_offset = 3                # byte offset of the rel32 inside the matched instruction
+#   instr_len   = 7                # total length of that instruction
+#                                  #   target = match + instr_len + (i32 at match + disp_offset)
+#   post_add    = 0                # i64 added to the resolved target
+#   deref       = false            # if true, read a pointer at target (after post_add)
+#   occurrence  = 0                # use the Nth match (0-based)
+#   note        = "..."            # free text, ignored by the loader
+# ---------------------------------------------------------------------------------------
+
+[gobjects]
+# Result must be the address of FUObjectArray::ObjObjects (an FChunkedFixedUObjectArray).
+#   GUObjectArray = result - 0x10 in stock UE5 (ObjFirstGCIndex, ObjLastNonGCIndex,
+#   MaxObjectsNotConsideredByGC, OpenForDisregardForGC precede it).
+# strategy: "pattern" (try candidates) | "heuristic" (Dumper-7 style .data scan validating the
+#           chunked-array layout below) | "offset" (use raw_offsets.gobjects only)
+strategy = "pattern"
+fallback_heuristic = true           # if all candidates fail, run the .data heuristic
+
+[gobjects.layout]                   # FChunkedFixedUObjectArray, Dumper-7 "Default UE4.21 - UE5.7"
+objects_offset = 0x00               # FUObjectItem** Objects (chunk table)
+max_elements_offset = 0x10
+num_elements_offset = 0x14
+max_chunks_offset = 0x18
+num_chunks_offset = 0x1C
+elements_per_chunk = 65536          # 64 * 1024 in stock UE
+fuobjectitem_size = 0x18            # VERIFIED live on 25170642 (Dumper-7 detects this dynamically)
+fuobjectitem_object_offset = 0x00
+
+[[gobjects.candidates]]
+pattern = "48 8B 05 ?? ?? ?? ?? 48 8B 0C C8 48 8D 04 D1"
+kind = "rip_relative"
+disp_offset = 3
+instr_len = 7
+post_add = 0
+deref = false
+occurrence = 0
+note = "UNVERIFIED fallback (raw_offsets.gobjects_rva is used on 25170642). Inlined FUObjectArray::IndexToObject: mov rax,[ObjObjects.Objects]; mov rcx,[rax+rcx*8]; lea rax,[rcx+rdx*8]"
+
+[fnamepool]
+# Result must be the address of the FNamePool singleton (NamePoolData).
+# strategy: "pattern" | "dumper7" (scan every "48 8D 0D ?? ?? ?? ?? E8", accept when the call
+#           target calls InitializeSRWLock within 0x50 bytes AND references "ByteProperty"
+#           within 0x2A0 bytes — exactly what Dumper-7 does) | "offset" | "data_scan"
+# A [raw_offsets] gnames_rva that fails validation falls through to these, then to the data scan.
+strategy = "dumper7"
+fallback_pattern = true
+# Scan .data for a pointer to a heap block starting with the FNameEntries "None", "ByteProperty"
+# (FName 0 and 1): that slot is Blocks[0], the pool is slot - blocks_offset. Live on build
+# 25170642: pool 0xb27ba80, Blocks[0] slot 0xb27ba90, CurrentBlock 0x3e.
+fallback_data_scan = true
+
+[fnamepool.layout]                  # stock UE5 FNamePool / FNameEntryAllocator / FNameEntryHeader
+blocks_offset = 0x10                # FNameEntryAllocator: FRWLock(8) CurrentBlock(4) CurrentByteCursor(4) Blocks[]
+current_block_offset = 0x08
+current_byte_cursor_offset = 0x0C
+block_offset_bits = 16              # FNameBlockOffsetBits (Dumper-7 auto-detects 0xE..; stock = 16)
+entry_stride = 2                    # alignof(FNameEntry)
+header_size = 2                     # u16 header: bIsWide:1 | LowercaseProbeHash:5 | Len:10
+header_len_shift = 6
+header_wide_mask = 0x1
+
+[[fnamepool.candidates]]
+pattern = "48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? C6 05 ?? ?? ?? ?? 01"
+kind = "rip_relative"
+disp_offset = 3
+instr_len = 7
+post_add = 0
+deref = false
+occurrence = 0
+note = "UNVERIFIED fallback (raw_offsets.gnames_rva is used on 25170642). lea rcx,NamePoolData; call FNamePool::FNamePool; mov byte [bNamePoolInitialized],1"
+
+[gworld]
+# Result must be the address of the global UWorld* GWorld (deref once to get the UWorld).
+# strategy: "pattern" | "reflection" (find the live non-CDO UWorld via GObjects, then search
+#           .data for an aligned pointer to it — Dumper-7's method) | "offset"
+strategy = "reflection"
+fallback_pattern = true
+
+[[gworld.candidates]]
+pattern = "48 8B 1D ?? ?? ?? ?? 48 85 DB 74 ?? 41 B0 01"
+kind = "rip_relative"
+disp_offset = 3
+instr_len = 7
+post_add = 0
+deref = false
+occurrence = 0
+note = "UNVERIFIED fallback (raw_offsets.gworld_rva is used on 25170642). Common UE4/UE5 'mov rbx,[GWorld]; test rbx,rbx; jz; mov r8b,1'"
+
+[process_event]
+# Result must be the address of UObject::ProcessEvent(UObject*, UFunction*, void* Params).
+# strategy: "vtable_index" (VFT of GObjects[0] at `vtable_index`) |
+#           "flags_scan" (Dumper-7: walk GObjects[0]'s VFT, pick the first function containing
+#           `test [reg+FunctionFlags], 0x400` (FUNC_Native) within 0x400 bytes AND
+#           `test [reg+FunctionFlags], 0x400000` (FUNC_HasOutParms) within 0xF00 bytes) |
+#           "pattern" | "offset"
+strategy = "flags_scan"
+vtable_index = 0x4C                 # = Dumper-7 ProcessEventIdx on 25170642 (raw_offsets.process_event_rva is what runs)
+max_vtable_scan = 0x150             # how many VFT slots flags_scan may inspect
+candidates = []                     # no reliable generic byte pattern for UE5 PE; use flags_scan
+
+[world_tick]
+# The per-frame, game-thread entry point that drives RewindController.
+# strategy:
+#   "process_event" — detour ProcessEvent (already required) and run one update per frame,
+#                     de-duplicated by `frame_source`. Zero extra signatures. DEFAULT.
+#   "vtable"        — hook `vtable_class` instance's VFT slot `vtable_index` (e.g. UGameEngine::Tick).
+#   "pattern"       — detour the function at the resolved candidate (kind = "direct").
+#   "sim_step"      — detour the Kunos physics step found during RE (raw_offsets.sim_step_rva).
+#                     Best option for the custom-solver case: lets us skip the step while scrubbing.
+strategy = "process_event"
+frame_source = "present_counter"    # "present_counter" (hudhook Present bumps an atomic) | "qpc_16ms"
+vtable_class = "GameEngine"         # class whose live instance's VFT is hooked (strategy = "vtable")
+# vtable_index =                    # unknown; fill from IDA / x64dbg if strategy = "vtable"
+candidates = []                     # e.g. UWorld::Tick / UGameEngine::Tick prologue once found
+# If no tick hook can be installed (e.g. ProcessEvent unresolved) the hook falls back to a 16 ms
+# timer thread. That thread is NOT the game thread, so only raw-memory paths work there
+# (sim_car backend, custom_time_dilation freeze, class_scan pawn lookup); UFunction calls are refused.
+
+[freeze]
+# Levers that stop the simulation while scrubbing, tried in order; the first resolvable one wins.
+#   "sim_step"             — skip the detoured Kunos step (needs world_tick.strategy = "sim_step")
+#   "custom_time_dilation" — write AActor::CustomTimeDilation = 0 on the car (raw write)
+#   "global_time_dilation" — UGameplayStatics::SetGlobalTimeDilation (game thread only)
+#   "physics_avatar_pause" — dmphysics PhysicsAvatar.SetPaused(true) on the live PhysicsAvatar
+#                            (game thread only). UNVERIFIED; opt-in, not in the default list.
+#   "none"                 — no freeze; the car is only held by re-writing the pose every frame
+# Every backend also re-writes the scrub pose with zero velocities each frame while scrubbing
+# (car_avatar: SetPhysicsTransform + SetVelocityCMS(0) + zero body velocities), so a missing
+# lever only costs some jitter. AcrGameMode.PauseGame() is another candidate (it runs the game's
+# pause flow, probably with a menu) and is deliberately not used.
+# UNVERIFIED which of these actually stops the ACR sim — see re-notes §5.3 step 5.
+levers = ["sim_step", "custom_time_dilation", "global_time_dilation"]
+global_time_dilation_value = 0.0001
+
+# ---------------------------------------------------------------------------------------
+# Reflection names (resolved through GObjects + FNamePool at runtime). Class names are the
+# FName without the U/A prefix, exactly as Dumper-7 / UE4SS show them ("Actor", not "AActor").
+# ---------------------------------------------------------------------------------------
+[reflection]
+# How to find the player car:
+#   "local_player" — GWorld.OwningGameInstance.LocalPlayers[player_index].PlayerController
+#                    .AcknowledgedPawn via reflected properties (plain reads, any thread), then
+#                    IsA against the candidates below; falls back to "class_scan". DEFAULT.
+#   "player_pawn"  — UGameplayStatics::GetPlayerPawn(GWorld, 0) (ProcessEvent, game thread).
+#   "class_scan"   — first live, non-CDO object whose class IsA one of the candidates.
+pawn_lookup = "local_player"
+player_index = 0
+
+# The ACR car pawn (Dumper-7, build 25170642): dmphysics.CarAvatar (APawn, 0xCD0 bytes) and the
+# game subclass acr.AcrCarAvatar. The rest are generic guesses kept for other builds.
+vehicle_pawn_class_candidates = [
+  "AcrCarAvatar",                   # VERIFIED live: acr.AcrCarAvatar : CarAvatar
+  "CarAvatar",                      # VERIFIED live: dmphysics.CarAvatar : Pawn
+  "WheeledVehiclePawn",             # Chaos base class; the plugin is present but the car uses dmphysics
+  "ACRCar",
+  "ACRVehicle",
+  "ACRVehiclePawn",
+  "ACRCarPawn",
+  "SNCarPawn",
+  "KsCar",
+  "CarPawn",
+  "VehiclePawn",
+]
+# Property on the pawn holding the physics/visual body. First found wins.
+root_component_property = "RootComponent"
+physics_component_property_candidates = ["Mesh", "VehicleMesh", "CarMesh", "SkeletalMesh", "Body"]
+# Movement / simulation component classes to look for on the pawn (logged; decides write path).
+movement_component_class_candidates = [
+  "ChaosWheeledVehicleMovementComponent",
+  "ChaosVehicleMovementComponent",
+  "ACRVehicleMovementComponent",
+  "ACRCarPhysicsComponent",
+  "KsPhysicsComponent",
+]
+time_dilation_property = "CustomTimeDilation"     # AActor float; used to freeze just the car
+
+# Which of the [reflection.functions] below are mandatory (generic ue_actor backend + sig-test;
+# car_avatar has its own list under [backend.car_avatar]). Must stay ABOVE the
+# [reflection.functions] header, or TOML parses it as a function entry.
+required_functions = [
+  "k2_get_actor_location",
+  "k2_get_actor_rotation",
+  "k2_set_actor_location_and_rotation",
+  "get_player_pawn",
+]
+
+# UFunctions called through ProcessEvent. Each entry: class (owner UClass FName) + name.
+# Param struct offsets MUST be read from the UFunction's FProperty chain at runtime (not hardcoded).
+# UE5 is Large-World-Coordinates: FVector/FRotator are 3 x f64, FQuat 4 x f64, units = cm.
+[reflection.functions]
+k2_get_actor_location             = { class = "Actor", name = "K2_GetActorLocation" }             # () -> FVector
+k2_get_actor_rotation             = { class = "Actor", name = "K2_GetActorRotation" }             # () -> FRotator
+k2_set_actor_location_and_rotation = { class = "Actor", name = "K2_SetActorLocationAndRotation" } # (FVector, FRotator, bool bSweep, out FHitResult, bool bTeleport) -> bool
+k2_teleport_to                    = { class = "Actor", name = "K2_TeleportTo" }                   # (FVector, FRotator) -> bool
+get_velocity                      = { class = "Actor", name = "GetVelocity" }                     # () -> FVector
+get_physics_linear_velocity       = { class = "PrimitiveComponent", name = "GetPhysicsLinearVelocity" }           # (FName BoneName) -> FVector
+get_physics_angular_velocity      = { class = "PrimitiveComponent", name = "GetPhysicsAngularVelocityInRadians" } # (FName BoneName) -> FVector
+set_physics_linear_velocity       = { class = "PrimitiveComponent", name = "SetPhysicsLinearVelocity" }           # (FVector, bool bAddToCurrent, FName BoneName)
+set_physics_angular_velocity      = { class = "PrimitiveComponent", name = "SetPhysicsAngularVelocityInRadians" } # (FVector, bool bAddToCurrent, FName BoneName)
+is_simulating_physics             = { class = "PrimitiveComponent", name = "IsSimulatingPhysics" }                # (FName BoneName) -> bool
+get_player_pawn                   = { class = "GameplayStatics", name = "GetPlayerPawn" }         # (UObject* WorldContext, int32) -> APawn*
+set_global_time_dilation          = { class = "GameplayStatics", name = "SetGlobalTimeDilation" } # (UObject* WorldContext, float)
+set_game_paused                   = { class = "GameplayStatics", name = "SetGamePaused" }         # (UObject* WorldContext, bool) -> bool
+is_game_paused                    = { class = "GameplayStatics", name = "IsGamePaused" }          # (UObject* WorldContext) -> bool
+# dmphysics.CarAvatar (backend "car_avatar"). The car_* functions below are VERIFIED live (resolved
+# and called in-game on 25170642); param layouts match the Dumper-7 SDK, and offsets are still
+# read from the FProperty chain at runtime. physics_avatar_set_paused and acr_*_game are unused.
+car_set_physics_transform = { class = "CarAvatar", name = "SetPhysicsTransform" } # (const FTransform& InTransform @0x0 [0x60, f64, cm], bool bResetCar @0x60), parms 0x70
+car_set_velocity_cms      = { class = "CarAvatar", name = "SetVelocityCMS" }      # (FVector InVelocityCMS @0x0 [0x18]), cm/s
+car_get_velocity_cms      = { class = "CarAvatar", name = "GetVelocityCMS" }      # () -> FVector (cm/s)
+car_get_rpms              = { class = "CarAvatar", name = "GetRPMS" }             # () -> float
+car_get_gear              = { class = "CarAvatar", name = "GetGear" }             # () -> FString ("R", "N", "1".."n")
+car_get_respawn_seq       = { class = "CarAvatar", name = "GetRespawnSeq" }       # () -> int32 (bumps on respawn)
+car_get_speed_kmh         = { class = "CarAvatar", name = "GetSpeedKMH" }         # () -> float
+physics_avatar_set_paused = { class = "PhysicsAvatar", name = "SetPaused" }       # (bool bInPaused); freeze lever "physics_avatar_pause"
+acr_pause_game            = { class = "AcrGameMode", name = "PauseGame" }         # () — opens the pause flow; documented alternative, unused
+acr_resume_game           = { class = "AcrGameMode", name = "ResumeGame" }        # ()
+# Chaos-only extras (absent in ACR if it uses the Kunos solver — that's fine, they're optional):
+chaos_set_target_gear             = { class = "ChaosVehicleMovementComponent", name = "SetTargetGear" }   # (int32, bool bImmediate)
+chaos_get_current_gear            = { class = "ChaosVehicleMovementComponent", name = "GetCurrentGear" }  # () -> int32
+# ---------------------------------------------------------------------------------------
+# Raw offsets — fill these from the Dumper-7 SDK (Basic.hpp `namespace Offsets`) and from
+# manual RE. Any key present here overrides the corresponding scan above.
+# The engine globals below come from a Dumper-7 run against build 25170642 (UE 5.6.1).
+# ---------------------------------------------------------------------------------------
+[raw_offsets]
+gobjects_rva = 0xb35f5b0            # VERIFIED live (sig-test): ObjObjects, NumElements ~112k, 65536/chunk (Dumper-7 Offsets::GObjects)
+gnames_rva = 0xb27ba80              # VERIFIED live (sig-test): FNamePool; Blocks[0] at +0x10 -> "None", "ByteProperty". NOT Dumper-7's GNames 0xb242ee8 (a fallback Dumper-7 itself doesn't use)
+gworld_rva = 0xb074730              # VERIFIED live (sig-test + mod): Dumper-7 Offsets::GWorld
+process_event_rva = 0x16971b0       # VERIFIED live (sig-test + mod, detoured): Dumper-7 Offsets::ProcessEvent
+process_event_index = 0x4c          # Dumper-7 Offsets::ProcessEventIdx
+append_string_rva = 0x14769e0       # Dumper-7 Offsets::AppendString (optional, FName -> string)
+# sim_step_rva       =     # Kunos physics step function (world_tick.strategy = "sim_step")
+
+[raw_offsets.uobject]               # UE 5.6 x64; FField/FProperty offsets from Dumper-7, VERIFIED live (build 25170642)
+vtable = 0x00
+object_flags = 0x08
+internal_index = 0x0C
+class = 0x10
+name = 0x18                         # FName { ComparisonIndex: u32, Number: u32 }
+outer = 0x20
+ufield_next = 0x28
+ustruct_super = 0x40
+ustruct_children = 0x48
+ustruct_child_properties = 0x50     # FField* chain (FProperty)
+ustruct_properties_size = 0x58
+ufunction_flags = 0xB0
+ufunction_func = 0xD8
+ffield_class = 0x08
+ffield_next = 0x18                  # Dumper-7 FField::Next (UE 5.6 dropped FFieldVariant's bIsUObject)
+ffield_name = 0x20                  # Dumper-7 FField::Name
+fproperty_element_size = 0x34       # Dumper-7 FProperty::ElementSize
+fproperty_flags = 0x38              # Dumper-7 FProperty::PropertyFlags
+fproperty_offset = 0x44             # Dumper-7 FProperty::Offset_Internal
+
+# Custom-solver (Kunos) car state: the simulated rigid bodies (docs/re-notes.md §8).
+# VERIFIED live on build 25170642: rigid bodies are 0x300-byte pool slots (an 8-byte allocator
+# header precedes each object), f64, metres, same axes as shm graphics carCoordinates. A car's
+# ~14-20 bodies share the parent pointer at +0x8 (with some unrelated world objects); two of them
+# sit exactly at the car position (main chassis + a twin at +0x300, VERIFIED: 0.000 m / 0.000 m/s
+# vs shm), the rest are suspension parts etc. Heap addresses and slot order
+# change on every stage load, and static pointer chains do NOT survive a restart (0/500 chains),
+# so the default locator scans for the vtable instead.
+[raw_offsets.sim_car]
+# "vtable_scan" (default): scan committed private RW memory for 8-aligned qwords equal to
+#   module_base + vtable_rva, group the bodies by parent pointer, re-read them, take the group
+#   with a body within match_tolerance_m of shm graphics carCoordinates. The parent is NOT per
+#   car (live: one group of 28, ~20 car parts within 2.5 m plus world objects 22-804 m away), so
+#   the car is only the group's bodies within car_radius_m of the main body (and, while it moves
+#   faster than car_moving_mps, with a velocity within car_velocity_tolerance_mps + |w|*distance
+#   of the main body's). Nothing outside that set is ever written. Scans run on a background thread
+#   (rescans try the regions that held the last car first);
+#   every tick only re-checks the cached bodies (vtable, parent, position finite and near the
+#   previous tick). All offsets below are relative to the object start (the vtable pointer).
+# "chain": follow `chain` from `chain_root` (offsets relative to the chain target).
+locator = "vtable_scan"
+vtable_rva = 0xa8d9830              # VERIFIED: acr.exe+0xa8d9830 (rigid-body vtable)
+object_size = 0x300                 # VERIFIED pool slot stride; every field must lie inside it
+parent_offset = 0x8                 # VERIFIED: parent/world pointer, same for all bodies of a car
+match_tolerance_m = 2.0             # body vs shm carCoordinates distance for the car to match...
+shm_lag_s = 0.06                    # ...plus |v| * this: carCoordinates trails the physics by ~1 update
+                                    # (live: 0.34-0.59 m at 58 km/h). Applies to every body-vs-shm check.
+car_radius_m = 4.0                  # car bodies lie within this distance of the main body
+car_velocity_tolerance_mps = 3.0    # while moving: max |v_body - v_main| (+ |w| * distance)
+car_moving_mps = 1.0                # the velocity test applies above this main-body speed
+rescan_interval_ms = 1000           # minimum time between two background scans
+max_jump_m = 20.0                   # main-body movement per tick above which the cache is distrusted
+hint_mismatch_m = 5.0               # rescan if the main body stays this far from shm carCoordinates...
+hint_mismatch_s = 0.5               # ...for this long while the mod is not writing (stale stage)
+chain_root = "pawn"                 # locator = "chain": "module" (rva chain) | "pawn" (player pawn)
+chain = []                          # locator = "chain": e.g. [0x2F8, 0x10, 0x0]; addr = *(addr + off)
+value_type = "f64"                  # VERIFIED f64
+length_scale = 1.0                  # VERIFIED metres (sim length units per metre)
+position = 0x138                    # VERIFIED vec3, world, same axes as shm carCoordinates
+rotation_matrix = 0x158             # VERIFIED 3 rows x 4 f64 (only the 3x3 part is read/written)
+rotation_matrix_layout = "rows"     # "rows" | "columns": order of the 9 values in memory
+rotation_matrix_row_stride = 4      # VERIFIED: row stride 0x20 = 4 f64
+linear_velocity = 0x1d8             # VERIFIED world m/s, matches shm physics velocity
+angular_velocity = 0x1f8            # PROBABLE rad/s (not yet correlated)
+# NOT FOUND YET (probably a separate drivetrain struct). With vtable_scan these offsets would be
+# relative to the main chassis body, which is likely wrong; leave them unset until located.
+# wheel_angular_speed = [] # 4 offsets FL FR RL RR (cross-check with acpmf_physics.wheelAngularSpeed)
+# engine_rpm        =   # or engine angular speed (rad/s)
+engine_rpm_is_rad_s = false         # true if `engine_rpm` stores rad/s
+# gear              =   # i32
+gear_neutral_value = 0              # raw value meaning neutral (AC shm convention: 0=R 1=N 2=1st -> 1)
+# Optional opaque POD regions snapshotted/restored verbatim (offset, length) — must not contain pointers.
+blob_regions = []                   # e.g. [[0x100, 0x180], [0x400, 0x60]]
+
+# ---------------------------------------------------------------------------------------
+# Write path. Backends are tried in `order`; the first that can be built wins (the choice and
+# the reason for skipping the others are logged):
+#   "car_avatar" — dmphysics CarAvatar UFunctions on the game thread: K2_GetActorLocation /
+#                  Rotation + GetVelocityCMS / GetRPMS / GetGear to read, SetPhysicsTransform +
+#                  SetVelocityCMS to write; the vtable_scan bodies ([raw_offsets.sim_car]) add
+#                  angular velocities. Needs a game-thread tick (world_tick) and ProcessEvent.
+#   "sim_car"    — raw writes to the rigid bodies ([raw_offsets.sim_car]); works from any thread.
+#   "ue_actor"   — generic AActor teleport (expected NOT to move the dmphysics car).
+# ---------------------------------------------------------------------------------------
+[backend]
+order = ["car_avatar", "sim_car", "ue_actor"]
+
+[backend.car_avatar]
+pawn_class = "CarAvatar"            # the pawn must IsA this class (SetPhysicsTransform's owner)
+required_functions = ["car_get_rpms", "car_get_respawn_seq"]   # on top of location/rotation/SetPhysicsTransform/SetVelocityCMS/GetVelocityCMS
+reset_car = false                   # SetPhysicsTransform bResetCar (true = respawn-style reset; UNVERIFIED side effects)
+# Sim-body fields written after SetPhysicsTransform/SetVelocityCMS (needs the vtable_scan bodies):
+#   "velocities" (default) recorded linear + angular velocity of every body, zero while scrubbing
+#   "full"       the recorded pose + velocities of every body (overrides what SetPhysicsTransform did)
+#   "none"
+body_writes = "velocities"
+# UE world (cm, left-handed X fwd / Y right / Z up) -> sim / shm carCoordinates (m):
+# sim[i] = sign * ue[axis] / 100. "auto" derives it from actor location vs. the main sim body
+# and logs the result; pin it here once seen.
+# VERIFIED live on 25170642 (auto-detected, then pinned): sim = (UE.x, UE.z, UE.y) / 100.
+# Writes never depend on it (snapshots are stored in UE space); it is used for the validate
+# log line and to report angular velocity in UE axes.
+ue_to_sim_axes = ["+x", "+z", "+y"]
+axes_fit_tolerance_m = 1.0
+gear_poll_ms = 1000                 # GetGear returns an engine-allocated FString; poll rarely
+diag_interval_ms = 2000             # "car_avatar validate:" log line interval (0 = off)
+
+# ---------------------------------------------------------------------------------------
+# Online / leaderboard guard. ACR online = EOS lobbies where every player drives SOLO in a
+# local instance, so UE NetMode is probably Standalone even online -> NetMode alone is NOT a
+# sufficient signal. The guard combines several signals and fails CLOSED.
+# ---------------------------------------------------------------------------------------
+[online_guard]
+enabled = true
+fail_closed = true                  # if any signal can't be evaluated -> treat as online (mod disabled)
+recheck_interval_ms = 1000
+# 1) UE net mode (cheap, catches any future real netcode). Read via UWorld/NetDriver reflection.
+require_standalone_net_mode = true
+# 2) Shared memory (acpmf_graphics.status / session, AC layout). AC_STATUS: 0 OFF, 1 REPLAY,
+#    2 LIVE, 3 PAUSE. VERIFIED on build 25170642: ACR reports OFF (0) even while driving live,
+#    so status is non-blocking: only REPLAY pauses the mod (Inactive, history kept).
+#    `true` restores the AC behaviour (anything but LIVE is Inactive; missing status fails closed).
+shm_require_status_live = false
+shm_blocked_session_types = []      # UNKNOWN for ACR — fill after observing acpmf_graphics.session per mode
+shm_block_if_static_is_online = true            # acpmf_static.isOnline (ACC field; UNVERIFIED on ACR)
+# 3) Moza shared memory page (Local\acpmf_Moza): serverName / numVehicles. The page only exists
+#    while Moza software runs, so a MISSING page is not a signal (even with fail_closed); a
+#    present page blocks on a non-empty serverName / too many vehicles.
+shm_moza_block_if_server_name_nonempty = true   # UNVERIFIED hypothesis: non-empty in online lobbies
+shm_moza_block_if_num_vehicles_gt = 1           # UNVERIFIED hypothesis; delete the key to disable
+# 4) Reflection: block if any live (non-CDO) object whose class is EXACTLY one of these names
+#    exists. UNVERIFIED guesses; replace with real lobby/session/leaderboard classes from the SDK.
+#    Do not list UE base classes that exist in every game (e.g. "OnlineSession": the
+#    GameInstance always owns one, so it would block the mod permanently).
+blocked_live_classes = [
+  "ACRLobbySubsystem",
+  "ACRMultiplayerSubsystem",
+  "ACROnlineSubsystem",
+]
+blocked_live_class_name_substrings = ["Lobby", "Multiplayer"]   # matched against the *live game mode / game state* class name only
+# Allow-list (observed OFFLINE on build 25170642, must never match the substrings above or the
+# leaderboard ones below):
+#   main menu (world MainMenuWales):  game mode BC_MainGameMode_C, game state BC_MainGameState_C
+#   stage (world GreeceS3Elatia):     game mode BC_RaceGameMode_C, game state BC_RaceGameState_C
+# 5) Leaderboard-uploading offline modes (Time Attack, Challenges, ACR Events) — keep the
+#    mod off there too so leaderboards stay clean.
+block_leaderboard_modes = true
+leaderboard_mode_class_name_substrings = ["TimeAttack", "Challenge", "Event", "Leaderboard"]

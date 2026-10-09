@@ -1,0 +1,15 @@
+/target/
+/dist/
+**/*.rs.bk
+*.pdb
+*.log
+/re-work/
+re-work/
+
+# Build outputs and release archives never belong in the repository.
+/*.dll
+/*.exe
+*.zip
+
+# Files derived from the game (Dumper-7 SDK output).
+**/CppSDK/

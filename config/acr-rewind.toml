@@ -1,0 +1,84 @@
+# ACR Rewind configuration.
+# OFFLINE / SINGLE-PLAYER ONLY. The mod disables itself when an online session is detected.
+# Bindings and scrub speeds can also be edited in game: press F8 (open_settings) for the panel,
+# which saves back into this file (keeping the comments).
+
+# Master switch. When false the hook loads but never records or rewinds.
+enabled = true
+
+[buffer]
+# How many seconds of history to keep.
+seconds = 30.0
+# Snapshot capture rate (Hz). Memory = seconds * tick_hz snapshots.
+tick_hz = 60
+
+[scrub]
+# Speeds are "seconds of history per real second".
+# Digital scrub (keys, wheel / pad buttons): speed when first held ...
+initial_speed = 1.0
+# ... the maximum ...
+max_speed = 4.0
+# ... and how fast it accelerates (per second held).
+acceleration = 2.0
+# Analog scrub (LT / RT, DirectInput axes): trigger travel below this fraction is ignored.
+analog_deadzone = 0.08
+# Response curve exponent after the deadzone (1 = linear, >1 = finer control near the start).
+analog_curve = 1.6
+# Speed at full trigger travel.
+analog_max_speed = 4.0
+# Extra speed multiplier gained per second the trigger stays held ...
+analog_hold_boost = 0.5
+# ... up to this multiplier (1 = no hold acceleration).
+analog_boost_max = 2.0
+# Seconds the game stays frozen at the resume point before control returns.
+resume_delay = 0.25
+# Minimum history (seconds) required before the rewind mode can be entered.
+min_history = 0.5
+
+[mode]
+# Rewind mode: press "rewind" to freeze and enter, scrub back / forward, then "resume" (drive on
+# from the cursor; the later history is discarded) or "cancel" / "rewind" again (back to the
+# newest moment, nothing discarded).
+# Keep holding the rewind button after entering to scrub back (handy with a single wheel button).
+hold_rewind_scrubs = true
+# Cancel the mode automatically after this many seconds (0 = never).
+max_time_s = 0.0
+# The game still sees LT / RT as brake / throttle while you scrub. With true, "resume" waits
+# until every scrub input is released, so the car never restarts with a trigger held.
+resume_requires_release = false
+
+[bindings]
+# Each action takes a list of bindings; any of them triggers it.
+#   key:R  key:F8  key:Left  key:Enter  key:0x5B           keyboard (virtual key name or code)
+#   pad:A  pad:Back  pad:DPadUp  pad:LB ...                 XInput button (Xbox names; Cross,
+#                                                           Circle, Create, Options, L1 ... work too)
+#   pad:LT  pad:RT  pad:LX-  pad:RY+  (optional @0.3)       XInput trigger / stick, analog
+#   joy:<product guid>/<name>:button5                       DirectInput button (0-based)
+#   joy:<product guid>/<name>:pov0up                        DirectInput POV hat (up/down/left/right)
+#   joy:<product guid>/<name>:axisZ+   axisZ-full@0.6       DirectInput axis: + / - from the centre,
+#                                                           +full / -full over the whole range (pedals)
+# The device may be "*" (any). Wheel bindings are easiest to add from the in-game panel (F8),
+# which fills in the product GUID and name of the device you press.
+rewind = ["key:R", "pad:Back"]
+resume = ["key:Enter", "pad:A"]
+cancel = ["key:Backspace"]
+scrub_back = ["key:Left", "pad:LT"]
+scrub_forward = ["key:Right", "pad:RT"]
+open_settings = ["key:F8"]
+
+[hook]
+# Validation mode: record snapshots and log them against shared memory, but NEVER write car
+# state or freeze the game. Writes were verified in game (build 25170642), so this ships off;
+# set it to true to check a new game build first (see README "Validating").
+read_only = false
+# Read-only mode: interval (ms) between snapshot-vs-shared-memory log lines.
+validation_log_interval_ms = 1000
+# Log filter for acr-rewind.log: "error", "warn", "info", "debug", "trace".
+log_level = "info"
+# In-game overlay: "dx12" (ACR's renderer), "dx11", or "off".
+overlay = "dx12"
+# Seconds to wait for the engine to finish starting before giving up.
+init_timeout_s = 300
+# After each resume, check shared memory against the restored state and disable the mod if
+# the write did not reach the simulation.
+post_resume_check = true
