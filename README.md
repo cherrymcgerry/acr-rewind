@@ -15,10 +15,6 @@ carry on driving from the moment you pick, with the speed it had then.
 
 ![ACR Rewind demo: going off at a fence, rewinding along the on-screen timeline, and resuming](docs/media/demo.gif)
 
-*The full demo video (with sound) is below.*
-
-<!-- VIDEO: drag github.mp4 here in the GitHub web editor -->
-
 ## Features
 
 - Freeze, scrub back and forward through the last 30 s, then resume or cancel.
@@ -219,3 +215,8 @@ Documentation:
 log snapshots against shared memory without ever writing to the game or freezing it. Use it to
 check `signatures.toml` on a new build before enabling writes (`docs/re-notes.md` §9.5 lists the
 log lines to check).
+
+
+
+
+
