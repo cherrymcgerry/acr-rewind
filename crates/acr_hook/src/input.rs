@@ -650,7 +650,8 @@ pub mod hub {
 #[cfg(windows)]
 mod dinput {
     //! DirectInput8 game controllers, read non-exclusively in the background (no window, no
-    //! force feedback, the game keeps its own access).
+    //! force feedback, the game keeps its own access). A force-feedback device also lends its
+    //! effect vtable to [`crate::ffb::hook`].
 
     use super::JoyState;
     use std::ffi::c_void;
@@ -837,6 +838,9 @@ mod dinput {
                 let _ = dev.Acquire();
                 let name = wide(&inst.tszProductName);
                 let name = if name.is_empty() { wide(&inst.tszInstanceName) } else { name };
+                if caps.dwFlags & DIDC_FORCEFEEDBACK != 0 {
+                    crate::ffb::hook::install(&dev, &name);
+                }
                 Ok(Device {
                     dev,
                     ok: true,

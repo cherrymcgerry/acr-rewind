@@ -492,6 +492,7 @@ pub fn run(hinstance: usize, dll_dir: PathBuf) {
     runtime::install(Runtime {
         driver,
         input: ActionTracker::default(),
+        ffb: Default::default(),
         settings_version: settings::version(),
         guard_interval: Duration::from_millis(sigs.online_guard.recheck_interval_ms),
         last: None,

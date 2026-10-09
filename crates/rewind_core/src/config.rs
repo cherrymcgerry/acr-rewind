@@ -20,6 +20,18 @@ pub struct Config {
     pub scrub: ScrubConfig,
     pub mode: ModeConfig,
     pub bindings: BindingsConfig,
+    pub ffb: FfbConfig,
+}
+
+/// Wheel force feedback around a rewind. Normal driving is never touched.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct FfbConfig {
+    /// Silence the game's force feedback while the rewind mode and the resume run-in hold
+    /// the car (teleports and held poses can produce violent forces).
+    pub mute_during_rewind: bool,
+    /// Seconds over which the force feedback ramps back to full after the run-in.
+    pub fade_in_s: f64,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -89,7 +101,14 @@ impl Default for Config {
             scrub: ScrubConfig::default(),
             mode: ModeConfig::default(),
             bindings: BindingsConfig::default(),
+            ffb: FfbConfig::default(),
         }
+    }
+}
+
+impl Default for FfbConfig {
+    fn default() -> Self {
+        Self { mute_during_rewind: true, fade_in_s: 1.0 }
     }
 }
 
@@ -279,7 +298,7 @@ impl Config {
         toml::to_string_pretty(self).expect("Config is always serializable")
     }
 
-    /// Rewrites `[scrub]`, `[mode]` and `[bindings]` of an existing document with this
+    /// Rewrites `[scrub]`, `[mode]`, `[bindings]` and `[ffb]` of an existing document with this
     /// config, keeping every other key and the comments of the file.
     pub fn update_toml(&self, existing: &str) -> Result<String, ConfigError> {
         use toml_edit::{value, Array, DocumentMut, Item, Table};
@@ -320,6 +339,9 @@ impl Config {
             let arr: Array = self.bindings.get(a).iter().map(ToString::to_string).collect();
             bindings[a.key()] = value(arr);
         }
+        let ffb = table(&mut doc, "ffb")?;
+        ffb["mute_during_rewind"] = value(self.ffb.mute_during_rewind);
+        ffb["fade_in_s"] = value(round3(self.ffb.fade_in_s));
         let out = doc.to_string();
         Ok(if existing.contains("\r\n") { out.replace("\r\n", "\n").replace('\n', "\r\n") } else { out })
     }
@@ -367,6 +389,9 @@ impl Config {
         if !(self.mode.max_time_s.is_finite() && self.mode.max_time_s >= 0.0) {
             return invalid("mode.max_time_s must be >= 0");
         }
+        if !(self.ffb.fade_in_s.is_finite() && (0.0..=10.0).contains(&self.ffb.fade_in_s)) {
+            return invalid("ffb.fade_in_s must be in [0, 10]");
+        }
         Ok(())
     }
 
@@ -403,6 +428,21 @@ mod tests {
         assert_eq!(cfg.bindings, defaults, "shipped bindings are the documented defaults");
         assert_eq!(cfg.scrub, ScrubConfig::default());
         assert_eq!(cfg.mode, ModeConfig::default());
+        assert_eq!(cfg.ffb, FfbConfig { mute_during_rewind: true, fade_in_s: 1.0 });
+    }
+
+    #[test]
+    fn ffb_section() {
+        let cfg = Config::from_toml_str("[ffb]\nmute_during_rewind = false\n").unwrap();
+        assert!(!cfg.ffb.mute_during_rewind);
+        assert_eq!(cfg.ffb.fade_in_s, 1.0, "missing key keeps the default");
+        assert!(Config::from_toml_str("").unwrap().ffb.mute_during_rewind, "missing section mutes");
+        let mut cfg = Config::default();
+        cfg.ffb.mute_during_rewind = false;
+        cfg.ffb.fade_in_s = 2.5;
+        let out = cfg.update_toml("# mine\n[ffb]\n# keep\nmute_during_rewind = true\n").unwrap();
+        assert!(out.contains("# keep"), "{out}");
+        assert_eq!(Config::from_toml_str(&out).unwrap().ffb, cfg.ffb);
     }
 
     #[test]
@@ -544,6 +584,8 @@ mod tests {
             "[scrub]\nanalog_max_speed = 0.0",
             "[scrub]\nanalog_boost_max = 0.5",
             "[mode]\nmax_time_s = -1.0",
+            "[ffb]\nfade_in_s = -0.5",
+            "[ffb]\nfade_in_s = 60.0",
         ] {
             assert!(matches!(Config::from_toml_str(s), Err(ConfigError::Invalid(_))), "{s}");
         }

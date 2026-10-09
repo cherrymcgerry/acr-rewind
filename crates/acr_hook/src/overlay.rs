@@ -402,6 +402,7 @@ mod render {
                 d.scrub = def.scrub;
                 d.mode = def.mode;
                 d.bindings = def.bindings;
+                d.ffb = def.ffb;
             }
             ui.same_line();
             if ui.button("Close") {
@@ -433,6 +434,11 @@ mod render {
                 ui.checkbox("holding rewind scrubs back", &mut d.mode.hold_rewind_scrubs);
                 ui.checkbox("resume waits for released triggers", &mut d.mode.resume_requires_release);
                 ui.slider("auto-cancel after (s, 0 = never)", 0.0, 300.0, &mut d.mode.max_time_s);
+            }
+            if ui.collapsing_header("Wheel force feedback", TreeNodeFlags::empty()) {
+                ui.checkbox("mute during rewind and resume", &mut d.ffb.mute_during_rewind);
+                ui.slider("fade back in over (s)", 0.0, 3.0, &mut d.ffb.fade_in_s);
+                ui.text_disabled(crate::ffb::status_line());
             }
             if ui.collapsing_header("Devices", TreeNodeFlags::empty()) {
                 self.devices_section(ui);

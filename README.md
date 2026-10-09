@@ -92,6 +92,11 @@ discarded), or **Cancel** to return to the present with nothing changed.
   throttle and brake. Nothing happens while frozen, but if you are still on the throttle when you
   resume, the car pulls away at once. Set `resume_requires_release = true` under `[mode]` in
   `acr-rewind.toml` to make Resume wait until the triggers are released.
+- **Wheel force feedback** is muted while the rewind mode and the resume run-in hold the car,
+  then fades back to full over 1 s, so a car held against scenery after a crash can't yank the
+  wheel. Normal driving is never touched. Set it under `[ffb]` in `acr-rewind.toml` or in the
+  settings panel (*Wheel force feedback*). This works for wheels the game drives through
+  DirectInput.
 
 ### Settings panel (F8)
 
@@ -101,7 +106,8 @@ panel, not the game.
 - **Bindings**: every action and its bindings. *add binding*, then press a key, pad button,
   trigger, wheel button, hat or pedal (`Esc` cancels); *remove* deletes one. Bindings shared
   with another action are flagged.
-- **Scrub speed** and **Rewind mode**: sliders and options; changes apply immediately.
+- **Scrub speed**, **Rewind mode** and **Wheel force feedback**: sliders and options; changes
+  apply immediately.
 - **Devices**: the connected pads and DirectInput devices.
 - **Save** writes your changes to `acr-rewind.toml` (comments are kept). **Revert to file**
   discards unsaved changes; **Defaults** restores the shipped settings.

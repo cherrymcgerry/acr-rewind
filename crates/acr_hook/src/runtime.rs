@@ -16,6 +16,7 @@ use std::time::{Duration, Instant};
 pub struct Runtime {
     pub driver: Driver,
     pub input: ActionTracker,
+    pub ffb: crate::ffb::FfbGuard,
     /// Last [`settings::version`] handed to the driver.
     pub settings_version: u64,
     pub guard_interval: Duration,
@@ -56,11 +57,15 @@ pub fn tick(on_game_thread: bool) {
             }
         }
         let raw = hub::take(hub::CONSUMER_TICK);
-        let input = settings::current()
+        let cfg = settings::current();
+        let input = cfg
+            .as_ref()
             .map(|cfg| rt.input.update(&cfg.bindings, &raw, !settings::panel_open()).mode)
             .unwrap_or_default();
         let verdict = crate::guard::monitor::current(rt.guard_interval);
         let st = rt.driver.tick(Frame { dt, input, verdict });
+        let ffb_cfg = cfg.map(|c| c.ffb).unwrap_or_default();
+        rt.ffb.tick(st.rewinding || st.resuming, dt, &ffb_cfg);
         overlay::publish(st);
     }));
     if result.is_err() {

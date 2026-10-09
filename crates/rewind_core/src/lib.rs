@@ -17,7 +17,7 @@ mod snapshot;
 
 pub use bindings::{Binding, InputAction};
 pub use buffer::RingBuffer;
-pub use config::{BindingsConfig, BufferConfig, Config, ConfigError, ModeConfig, ScrubConfig};
+pub use config::{BindingsConfig, BufferConfig, Config, ConfigError, FfbConfig, ModeConfig, ScrubConfig};
 pub use controller::{
     Action, CancelReason, ModeEvent, ModeInput, ModeView, RewindController, RewindState, ScrubInput, TickOutput,
     Timeline,

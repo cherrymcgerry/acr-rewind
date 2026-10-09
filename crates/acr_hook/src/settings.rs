@@ -2,8 +2,9 @@
 //! settings panel (render thread).
 //!
 //! The panel edits a copy and publishes it with [`update`]; the tick picks up the new
-//! [`version`] and hands the config to the driver. [`save`] writes `[scrub]`, `[mode]` and
-//! `[bindings]` back into `acr-rewind.toml`, keeping the rest of the file and its comments.
+//! [`version`] and hands the config to the driver. [`save`] writes `[scrub]`, `[mode]`,
+//! `[bindings]` and `[ffb]` back into `acr-rewind.toml`, keeping the rest of the file and its
+//! comments.
 
 use rewind_core::{Binding, Config};
 use std::path::{Path, PathBuf};
@@ -80,7 +81,7 @@ pub fn save() -> Result<String, String> {
     Ok(format!("saved to {}", path.display()))
 }
 
-/// Re-reads `[scrub]`, `[mode]` and `[bindings]` from the file.
+/// Re-reads `[scrub]`, `[mode]`, `[bindings]` and `[ffb]` from the file.
 pub fn revert() -> Result<String, String> {
     let path = SHARED.lock().ok().and_then(|g| g.as_ref().and_then(|s| s.path.clone())).ok_or("no config file path")?;
     let text = std::fs::read_to_string(&path).map_err(|e| format!("{}: {e}", path.display()))?;
@@ -89,6 +90,7 @@ pub fn revert() -> Result<String, String> {
     cfg.scrub = file.scrub;
     cfg.mode = file.mode;
     cfg.bindings = file.bindings;
+    cfg.ffb = file.ffb;
     update(cfg.clone())?;
     if let Ok(mut g) = SHARED.lock() {
         if let Some(s) = g.as_mut() {

@@ -8,6 +8,7 @@
 pub mod config;
 pub mod driver;
 pub mod engine;
+pub mod ffb;
 pub mod gate;
 pub mod guard;
 pub mod input;

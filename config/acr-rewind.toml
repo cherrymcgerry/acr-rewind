@@ -66,6 +66,15 @@ scrub_back = ["key:Left", "pad:LT"]
 scrub_forward = ["key:Right", "pad:RT"]
 open_settings = ["key:F8"]
 
+[ffb]
+# Wheel force feedback. Only the moments around a rewind are affected, never normal driving.
+# Silence the game's force feedback while the rewind mode and the resume run-in hold the car
+# (held poses and teleports, often into scenery after a crash, can make the physics push the
+# wheel violently). Works for wheels the game drives through DirectInput.
+mute_during_rewind = true
+# Seconds over which the force feedback ramps back to full after the resume (0 = instantly).
+fade_in_s = 1.0
+
 [hook]
 # Validation mode: record snapshots and log them against shared memory, but NEVER write car
 # state or freeze the game. Writes were verified in game (build 25170642), so this ships off;

@@ -7,6 +7,14 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Wheel force-feedback protection: the game's DirectInput force feedback is muted while the
+  rewind mode and the resume run-in hold the car, then fades back in (`[ffb]`
+  `mute_during_rewind = true`, `fade_in_s = 1.0`; also in the settings panel). It only scales the
+  game's own effect updates around a rewind and leaves normal driving untouched. A wheel user
+  reported very strong force feedback around crashes.
+
 ## [0.1.0-beta.1] - 2026-10-09
 
 First public beta. Supports *Assetto Corsa Rally* Early Access v0.6 (Steam build 25170642).
