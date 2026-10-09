@@ -101,7 +101,7 @@ try {
     $readme = [IO.File]::ReadAllText((Join-Path $root 'README.md')) -replace "`r`n", "`n"
     $cut = $readme.IndexOf("`n## For developers")
     if ($cut -lt 0) { throw "README.md has no '## For developers' section to cut at" }
-    $readme = $readme.Substring(0, $cut).TrimEnd() + "`n`n## Source code`n`nACR Rewind is open source; the source code and developer documentation are on GitHub.`n"
+    $readme = $readme.Substring(0, $cut).TrimEnd() + "`n`n## Source code`n`nACR Rewind is open source; the source code and developer documentation are on GitHub: https://github.com/cherrymcgerry/acr-rewind`n"
     [IO.File]::WriteAllText((Join-Path $player 'README.md'), $readme, [Text.UTF8Encoding]::new($false))
     Write-Host '    + README.md (player section)'
 
