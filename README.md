@@ -130,6 +130,9 @@ A gamepad can navigate the panel with the d-pad and `A`/`B`. You can also edit
 - Overlays that hook DirectX, such as RivaTuner Statistics Server (RTSS), may conflict with the
   mod's overlay. If the game crashes or the overlay doesn't appear, try disabling them.
 - Rewind is unavailable in replays, online sessions and leaderboard modes, by design.
+- Force-feedback muting only covers wheels the game drives through DirectInput. Fanatec wheels
+  use the Fanatec SDK built into the game, which the mod can't reach. A force the game started
+  earlier and doesn't update during the rewind keeps playing until the game changes it.
 
 ## Compatibility after game updates
 
