@@ -1,4 +1,4 @@
-//! Kunos rigid-body locator (`[raw_offsets.sim_car] locator = "vtable_scan"`, re-notes §8).
+//! Kunos rigid-body locator (`[raw_offsets.sim_car] locator = "vtable_scan"`; docs/technical-reference.md §5).
 //!
 //! Every simulated rigid body is a pool object whose first qword is the rigid-body vtable
 //! (`module_base + vtable_rva`). The locator sweeps committed private RW memory for 8-aligned

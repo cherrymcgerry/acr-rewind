@@ -64,8 +64,8 @@ Refreshing `config/signatures.toml` is usually all that's needed:
 3. Test in-game with `read_only = true`, then with writes enabled.
 4. Set `verified_build` to the new Steam build id and open a pull request.
 
-The full procedure is in [docs/updating-after-a-patch.md](docs/updating-after-a-patch.md);
-background is in [docs/re-notes.md](docs/re-notes.md).
+The full procedure is in [docs/updating-after-a-patch.md](docs/updating-after-a-patch.md); what
+each value means is in [docs/technical-reference.md](docs/technical-reference.md).
 
 ## Packaging
 

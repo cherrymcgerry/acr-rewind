@@ -1,5 +1,5 @@
 //! Default backend: the dmphysics `CarAvatar` pawn driven through its own UFunctions
-//! (re-notes §9). Every call goes through ProcessEvent and therefore only runs on the game
+//! (docs/technical-reference.md §4). Every call goes through ProcessEvent and therefore only runs on the game
 //! thread (the tick hook); [`Params::call`] refuses anything else. The rigid bodies found by
 //! the `vtable_scan` locator ([`BodyTracker`], background thread, plain memory reads only)
 //! add what the UFunctions can't restore: angular velocity, and optionally every body's state.

@@ -6,9 +6,8 @@ Every game-specific address, offset and class name ACR Rewind uses lives in
 writes the reason to `acr-rewind.log`, and stays disabled. This guide explains how to bring
 `signatures.toml` up to date for a new build. In most cases no code changes are needed.
 
-Background on what each value is and how it was originally found is in
-[`re-notes.md`](re-notes.md) (§4 for the engine globals, §8 for the sim rigid bodies, §9 for the
-`car_avatar` backend).
+What each value means is in [`technical-reference.md`](technical-reference.md) (§2 engine
+globals, §4 car pawn and UFunctions, §5 sim rigid bodies, §10 log lines).
 
 The guide uses these placeholders:
 
@@ -67,7 +66,7 @@ start the game offline, load a stage, drive for a minute, and quit. Then read `a
   `all UFunctions resolved`) means a class or function was renamed: steps 4–5.
 - `sim bodies: scan finished without a car` means the rigid-body vtable or layout moved: step 6.
 
-The full list of expected log lines is in `re-notes.md` §9.5. A quick health check of
+The expected log lines are in `technical-reference.md` §10. A quick health check of
 everything at once is `& $P sig-test` while sitting in the car on a stage (step 5).
 
 ## 3. Sanity checks: shared memory and module base
@@ -128,14 +127,14 @@ the full report to `re-work\dumper7-import.json`.
 | `UObject/UField/UStruct/UFunction/FField/FProperty` members | `[raw_offsets.uobject]` |
 | best pawn class (with `--apply-classes`) | prepended to `[reflection] vehicle_pawn_class_candidates` |
 
-`Offsets::GNames` is **not** the FNamePool on this game (`re-notes.md` §9.1), so the importer
+`Offsets::GNames` is **not** the FNamePool on this game (`technical-reference.md` §2), so the importer
 never writes it into `gnames_rva`. If the FNamePool moved, `sig-test` reports it and the
 resolver's `.data` scan finds the new pool; copy the address it prints into `gnames_rva`.
 
 Also check the SDK for renamed car classes or functions: `dmphysics.CarAvatar`,
 `acr.AcrCarAvatar`, and the `SetPhysicsTransform` / `SetVelocityCMS` / `GetVelocityCMS` /
 `GetRPMS` / `GetGear` / `GetRespawnSeq` parameter layouts in `dmphysics_parameters.hpp`
-(`re-notes.md` §9.2). Update `[reflection.functions]` and `[backend.car_avatar]` if they changed.
+(`technical-reference.md` §4). Update `[reflection.functions]` and `[backend.car_avatar]` if they changed.
 
 ## 5. Verify every signature against the running game
 
@@ -161,7 +160,7 @@ If anything fails, re-run with `--json` (the report is saved to `re-work\sig-tes
 
 ## 6. Re-locate the sim rigid bodies
 
-The mod finds the car's rigid bodies by scanning memory for their vtable (`re-notes.md` §8.1).
+The mod finds the car's rigid bodies by scanning memory for their vtable (`technical-reference.md` §5).
 After a patch the vtable RVA almost certainly changes, and the body layout may too.
 
 **In the game:** sit still in the car on a stage.
@@ -211,8 +210,8 @@ the shared-memory column most exactly; copies that lag a frame are render or int
 `<body-base>` is the object start (the vtable qword). The tool ranks candidate fields
 (`linear_velocity`, `angular_velocity`, `rotation_matrix`, …), prints `note:` lines for anything
 it couldn't check, and proposes a `[raw_offsets.sim_car]` block (also saved to
-`re-work\struct-correlate.json`). Keep `locator = "vtable_scan"`: static pointer chains did not
-survive a restart on build 25170642.
+`re-work\struct-correlate.json`). Keep `locator = "vtable_scan"`: static pointer chains don't
+survive a restart.
 
 ## 9. Test the mod in-game
 
@@ -222,7 +221,7 @@ survive a restart on build 25170642.
 2. Start offline, drive a stage for a minute, then quit. `acr-rewind.log` should show every
    global resolved, `backend: car_avatar`, `car_avatar validate:` lines with small `actor-body` /
    `actor-shm` residuals, a `sim bodies: scan finished: …` line with 14–20 car bodies, and
-   `online guard: Allowed`. See `re-notes.md` §9.5.
+   `online guard: Allowed`. See `technical-reference.md` §10.
 3. Set `read_only = false`, start the game and drive. Stop, press Rewind, scrub back, resume;
    then do the same at speed. The car should scrub back smoothly and continue with the recorded
    speed, and the log should show `post-resume validation ok`. On a `post-resume validation failed`
@@ -256,7 +255,6 @@ To uninstall the test build, delete the four files from `Win64`.
 | `ue-dump-classes [--filter s…] [--all] [--props] [--funcs] [--instances]` | Walk the UObject graph externally. |
 | `import-dumper7 [dir] [--dry-run] [--apply-classes]` | Import Dumper-7 offsets and member layouts into `signatures.toml`; report class candidates. |
 
-What `acr-probe` cannot do, because it is read-only by design: find the **sim step function**
-(`raw_offsets.sim_step_rva`, `world_tick.strategy = "sim_step"`). That needs a hardware write
-breakpoint on the body position ("find out what writes to this address" in a debugger), offline.
-It is optional: the `process_event` tick plus re-writing the pose every frame work without it.
+`acr-probe` is read-only, so it can't find the sim step function (`raw_offsets.sim_step_rva`,
+`world_tick.strategy = "sim_step"`); that needs a hardware write breakpoint on the body position
+in a debugger. It is optional: the default `process_event` tick doesn't use it.

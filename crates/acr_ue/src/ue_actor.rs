@@ -1,6 +1,6 @@
-//! Fallback backend: the UE actor via ProcessEvent (re-notes §6.A). Only effective if the UE
-//! body drives (or is honoured by) the simulation; with the expected Kunos solver the sim
-//! overwrites these writes, which the post-resume validation in the hook detects.
+//! Fallback backend: the UE actor via ProcessEvent. Only effective if the UE body drives the
+//! simulation; on ACR the dmphysics solver overwrites these writes, which the post-resume
+//! validation in the hook detects.
 //!
 //! Snapshot convention: UE world space with lengths converted cm -> m; rotation is the actor
 //! quaternion; angular velocity in rad/s.

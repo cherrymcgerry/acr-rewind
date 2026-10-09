@@ -39,8 +39,7 @@ Keep these in sync with `README.md` and update them for each release:
 - [ ] Troubleshooting: `acr-rewind.log` location and what to include in a report.
 - [ ] Antivirus note, SHA-256 of the uploaded zip, VirusTotal link.
 
-The precedent mod "Grip Happens" is also marked offline / non-competitive only; keep the same
-clear framing at the top of the description.
+Keep the offline / non-competitive framing at the top of the description.
 
 ## Permissions and credits
 

@@ -1,13 +1,14 @@
 # acr-rewind :: game-specific signatures, offsets and reflection names
 #
 # Loaded by crates/acr_ue at injection time. EVERYTHING game-specific lives here so a
-# game patch only requires editing this file (see docs/re-notes.md for how to refresh it).
+# game patch only requires editing this file (see docs/updating-after-a-patch.md and
+# docs/technical-reference.md).
 #
 # STATUS: VERIFIED IN-GAME ON BUILD 25170642 (ACR Early Access v0.6, UE 5.6.1).
 # The [raw_offsets] engine globals (GObjects, FNamePool, GWorld, ProcessEvent), the
 # FField/FProperty layout, the rigid-body vtable/layout, the car_avatar UFunctions and the
 # UE -> sim axis map were all exercised by the mod in-process with live rewinds on that build
-# (docs/re-notes.md §8, §9). Items marked VERIFIED below were confirmed live; byte patterns are
+# (docs/technical-reference.md). Items marked VERIFIED below were confirmed live; byte patterns are
 # generic UE5 fallbacks that only run when a raw offset fails validation, and stay UNVERIFIED.
 # The loader fails safe (disables the mod and logs why) when a required item can't be resolved
 # or fails its sanity check, e.g. after a game update.
@@ -168,9 +169,8 @@ candidates = []                     # e.g. UWorld::Tick / UGameEngine::Tick prol
 #   "none"                 — no freeze; the car is only held by re-writing the pose every frame
 # Every backend also re-writes the scrub pose with zero velocities each frame while scrubbing
 # (car_avatar: SetPhysicsTransform + SetVelocityCMS(0) + zero body velocities), so a missing
-# lever only costs some jitter. AcrGameMode.PauseGame() is another candidate (it runs the game's
-# pause flow, probably with a menu) and is deliberately not used.
-# UNVERIFIED which of these actually stops the ACR sim — see re-notes §5.3 step 5.
+# lever only costs some jitter. AcrGameMode.PauseGame() runs the game's pause flow and is not used.
+# UNVERIFIED which of these actually stops the ACR sim.
 levers = ["sim_step", "custom_time_dilation", "global_time_dilation"]
 global_time_dilation_value = 0.0001
 
@@ -295,7 +295,7 @@ fproperty_element_size = 0x34       # Dumper-7 FProperty::ElementSize
 fproperty_flags = 0x38              # Dumper-7 FProperty::PropertyFlags
 fproperty_offset = 0x44             # Dumper-7 FProperty::Offset_Internal
 
-# Custom-solver (Kunos) car state: the simulated rigid bodies (docs/re-notes.md §8).
+# Custom-solver (Kunos) car state: the simulated rigid bodies (docs/technical-reference.md §5).
 # VERIFIED live on build 25170642: rigid bodies are 0x300-byte pool slots (an 8-byte allocator
 # header precedes each object), f64, metres, same axes as shm graphics carCoordinates. A car's
 # ~14-20 bodies share the parent pointer at +0x8 (with some unrelated world objects); two of them
@@ -403,8 +403,8 @@ shm_block_if_static_is_online = true            # acpmf_static.isOnline (ACC fie
 # 3) Moza shared memory page (Local\acpmf_Moza): serverName / numVehicles. The page only exists
 #    while Moza software runs, so a MISSING page is not a signal (even with fail_closed); a
 #    present page blocks on a non-empty serverName / too many vehicles.
-shm_moza_block_if_server_name_nonempty = true   # UNVERIFIED hypothesis: non-empty in online lobbies
-shm_moza_block_if_num_vehicles_gt = 1           # UNVERIFIED hypothesis; delete the key to disable
+shm_moza_block_if_server_name_nonempty = true   # UNVERIFIED online signal
+shm_moza_block_if_num_vehicles_gt = 1           # UNVERIFIED online signal; delete the key to disable
 # 4) Reflection: block if any live (non-CDO) object whose class is EXACTLY one of these names
 #    exists. UNVERIFIED guesses; replace with real lobby/session/leaderboard classes from the SDK.
 #    Do not list UE base classes that exist in every game (e.g. "OnlineSession": the

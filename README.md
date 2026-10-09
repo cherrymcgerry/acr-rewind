@@ -222,13 +222,13 @@ Documentation:
 - [CONTRIBUTING.md](CONTRIBUTING.md): building, tests, and the offline-only policy.
 - [docs/updating-after-a-patch.md](docs/updating-after-a-patch.md): refreshing
   `signatures.toml` for a new game build with `acr-probe` and Dumper-7.
-- [docs/re-notes.md](docs/re-notes.md): technical reference (engine globals, sim rigid bodies,
-  `car_avatar` backend, online guard, log lines).
+- [docs/technical-reference.md](docs/technical-reference.md): engine globals, car pawn and
+  UFunctions, sim rigid bodies, online guard, force feedback, log lines.
 - [docs/beta-test-checklist.md](docs/beta-test-checklist.md): what beta testers should try.
 - [CHANGELOG.md](CHANGELOG.md).
 - [SECURITY.md](SECURITY.md): reporting a security problem privately.
 
 **Validation mode.** Set `read_only = true` under `[hook]` in `acr-rewind.toml` to record and
-log snapshots against shared memory without ever writing to the game or freezing it. Use it to
-check `signatures.toml` on a new build before enabling writes (`docs/re-notes.md` §9.5 lists the
-log lines to check).
+log snapshots against shared memory without writing to the game or freezing it. Use it to check
+`signatures.toml` on a new build before enabling writes; the expected log lines are in
+[docs/technical-reference.md](docs/technical-reference.md#10-log-lines-and-health-check).

@@ -250,7 +250,7 @@ fn make_backend(
             }
         }
     }
-    Err(format!("no write path ({}); see docs/re-notes.md §8-9", why.join("; ")))
+    Err(format!("no write path ({}); see docs/technical-reference.md", why.join("; ")))
 }
 
 /// UFunction keys some configured backend needs: retried fast until they resolve.

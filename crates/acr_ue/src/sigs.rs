@@ -495,7 +495,7 @@ pub enum SimCarLocator {
     Chain,
 }
 
-/// Custom-solver car state (see re-notes §6.B). With `locator = "vtable_scan"` every field
+/// Custom-solver car state (docs/technical-reference.md §5). With `locator = "vtable_scan"` every field
 /// offset is relative to the start of a rigid-body object (the vtable pointer).
 #[derive(Clone, Debug, Deserialize)]
 #[serde(default)]

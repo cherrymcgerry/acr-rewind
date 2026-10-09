@@ -1,5 +1,5 @@
 //! Primary backend for the custom (Kunos-derived) solver: reads and writes the simulated car
-//! state directly (re-notes §6.B, §8).
+//! state directly (docs/technical-reference.md §5).
 //!
 //! The car is located per `[raw_offsets.sim_car] locator`:
 //! - `vtable_scan` (default): the rigid bodies found by [`crate::bodies`] on a background

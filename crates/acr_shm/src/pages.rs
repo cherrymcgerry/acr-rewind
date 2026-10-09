@@ -270,7 +270,7 @@ impl From<&RawStatic> for StaticInfo {
 pub struct MozaInfo {
     pub num_vehicles: i32,
     pub focus_vehicle: i32,
-    /// Empty offline (hypothesis, unverified for ACR online lobbies).
+    /// Empty offline; value in ACR online lobbies unverified.
     pub server_name: String,
 }
 
