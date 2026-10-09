@@ -15,7 +15,7 @@ jobs:
     name: Build and publish
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install toolchain (rust-toolchain.toml)
         run: rustup toolchain install
@@ -37,7 +37,7 @@ jobs:
         run: ./scripts/package.ps1 -SkipBuild -NoDevZip
 
       - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           name: ACR Rewind ${{ env.VERSION }}
           draft: true
