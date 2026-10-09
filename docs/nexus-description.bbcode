@@ -16,6 +16,7 @@ Went off at the last hairpin? Press [b]Rewind[/b]: the game freezes, you scrub t
 [*]Freeze, scrub back and forward through the last 30 s, then [b]resume[/b] from any point or [b]cancel[/b] back to the present.
 [*]Analog scrubbing on the triggers or pedals, with an adjustable speed curve.
 [*]Keyboard, Xbox and PlayStation pads, and wheels, button boxes and pedals (DirectInput).
+[*]Wheel force feedback is muted while the car is held and fades back in after you resume, so a car pinned against scenery can't yank the wheel (DirectInput wheels such as Moza).
 [*]In-game settings panel ([b]F8[/b]) to bind any button and tune scrub speed; saved to the config file.
 [*]Online / leaderboard guard: rewind is disabled in online sessions, replays, Time Attack, Challenges and ACR Events. If the mod can't confirm you are offline, it stays off.
 [*]Fails safe: if a game update breaks compatibility, or restores keep failing, the mod disables itself and writes the reason to its log.
@@ -53,13 +54,14 @@ Mod managers: install manually to the folder above (the files must sit next to a
 
 [size=5][b]Known limitations[/b][/size]
 [list]
-[*][b]Beta:[/b] tested so far only with the [b]VW Polo GTI R5[/b] on a few stages. Other cars are expected to work, but haven't been verified yet.
+[*][b]Beta:[/b] tested so far only with the [b]VW Polo GTI R5[/b] on a few stages. Other cars are expected to work, but haven't been verified yet. Input tested with keyboard, a DualSense pad and a Moza R9 wheel.
 [*]Engine RPM and gear are not restored directly (the game has no way to set them). A short run-in while resuming spins the engine and tyres back up, so the car may need a moment to settle.
 [*]Scrubbing can be choppy in dense vegetation, where a crash spawns a lot of debris.
 [*][b]UE4SS conflicts[/b]: same dwmapi.dll file name, so the two can't be installed together.
 [*][b]Steam Deck / Linux (Proton): untested.[/b] It would need the launch option [code]WINEDLLOVERRIDES="dwmapi=n,b" %command%[/code]
 [*]Overlays that hook DirectX, such as RivaTuner Statistics Server (RTSS), may conflict with the mod's overlay. If the game crashes or the overlay doesn't appear, try disabling them.
 [*]Rewind is unavailable in replays, online sessions and leaderboard modes, by design.
+[*]Force-feedback muting only covers wheels the game drives through DirectInput (tested on a Moza R9). [b]Fanatec wheels are not covered[/b]: they use the Fanatec SDK built into the game, which the mod can't reach.
 [/list]
 
 [size=5][b]Compatibility after game updates[/b][/size]
@@ -81,7 +83,7 @@ Everything is logged to [b]acr-rewind.log[/b], next to the DLLs in [b]acr\Binari
 
 [size=5][b]Antivirus warnings and checksums[/b][/size]
 Some antivirus programs flag DLL-proxy loaders like dwmapi.dll (a DLL that loads another DLL into a game) as suspicious. This is a known false positive for this kind of mod. The source code is public, and release zips are built from it by GitHub Actions. SHA-256 checksums of the release zip are listed below and in SHA256SUMS.txt on the GitHub release; check yours with [b]Get-FileHash <file>[/b] in PowerShell.
-[code]SHA256 (ACR-Rewind-0.1.0-beta.1.zip) = SHA256_PLACEHOLDER[/code]
+[code]SHA256 (ACR-Rewind-0.1.0-beta.1.zip) = see SHA256SUMS.txt on the GitHub release[/code]
 VirusTotal report: VIRUSTOTAL_LINK_PLACEHOLDER
 
 [size=5][b]Uninstall[/b][/size]

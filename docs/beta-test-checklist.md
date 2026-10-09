@@ -28,6 +28,8 @@ menu or lobby screen.
 - [ ] Keyboard: `R` to rewind, `Left`/`Right` to scrub, `Enter` to resume, `Backspace` to cancel.
 - [ ] Gamepad: View/Create to rewind, LT/RT (L2/R2) to scrub, A/Cross to resume.
 - [ ] Wheel: bind Rewind, Resume and scrubbing (a button and/or a pedal) in the `F8` panel.
+- [ ] Wheel force feedback: crash into scenery, then rewind. The wheel should go quiet while the
+      car is held and fade back in after resuming. Note your wheel brand (Fanatec isn't covered).
 - [ ] `F8` rebinding: add and remove a binding, change scrub speed, **Save**, restart the game,
       and check the bindings are still there.
 

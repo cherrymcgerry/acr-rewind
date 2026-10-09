@@ -15,12 +15,17 @@ carry on driving from the moment you pick, with the speed it had then.
 
 ![ACR Rewind demo: going off at a fence, rewinding along the on-screen timeline, and resuming](docs/media/demo.gif)
 
+<!-- VIDEO: drag github.mp4 here in the GitHub web editor -->
+
 ## Features
 
 - Freeze, scrub back and forward through the last 30 s, then resume or cancel.
 - Analog scrubbing on the triggers or pedals, with an adjustable speed curve.
 - Works with keyboard, Xbox and PlayStation pads (XInput), and wheels, button boxes and pedals
   (DirectInput).
+- Wheel force feedback is muted while the car is held and fades back in after you resume, so a
+  car pinned against scenery can't yank the wheel (DirectInput wheels such as Moza; see
+  [Known limitations](#known-limitations)).
 - In-game settings panel (`F8`) for bindings and scrub speed, saved to `acr-rewind.toml`.
 - Disables itself safely if a game update breaks compatibility, or if the car can't be restored
   correctly.
@@ -118,7 +123,8 @@ A gamepad can navigate the panel with the d-pad and `A`/`B`. You can also edit
 ## Known limitations
 
 - **Beta:** tested so far only with the **VW Polo GTI R5** on a few stages. Other cars are
-  expected to work, but haven't been verified yet.
+  expected to work, but haven't been verified yet. Input tested with keyboard, a DualSense pad and
+  a Moza R9 wheel.
 - Engine RPM and gear are not restored directly (the game has no way to set them). A short
   run-in while resuming spins the engine and tyres back up, so the car may need a moment to
   settle.
@@ -130,7 +136,8 @@ A gamepad can navigate the panel with the d-pad and `A`/`B`. You can also edit
 - Overlays that hook DirectX, such as RivaTuner Statistics Server (RTSS), may conflict with the
   mod's overlay. If the game crashes or the overlay doesn't appear, try disabling them.
 - Rewind is unavailable in replays, online sessions and leaderboard modes, by design.
-- Force-feedback muting only covers wheels the game drives through DirectInput. Fanatec wheels
+- Force-feedback muting only covers wheels the game drives through DirectInput (tested on a Moza
+  R9; other DirectInput wheels should behave the same). **Fanatec wheels are not covered**: they
   use the Fanatec SDK built into the game, which the mod can't reach. A force the game started
   earlier and doesn't update during the rewind keeps playing until the game changes it.
 
@@ -219,13 +226,9 @@ Documentation:
   `car_avatar` backend, online guard, log lines).
 - [docs/beta-test-checklist.md](docs/beta-test-checklist.md): what beta testers should try.
 - [CHANGELOG.md](CHANGELOG.md).
+- [SECURITY.md](SECURITY.md): reporting a security problem privately.
 
 **Validation mode.** Set `read_only = true` under `[hook]` in `acr-rewind.toml` to record and
 log snapshots against shared memory without ever writing to the game or freezing it. Use it to
 check `signatures.toml` on a new build before enabling writes (`docs/re-notes.md` §9.5 lists the
 log lines to check).
-
-
-
-
-

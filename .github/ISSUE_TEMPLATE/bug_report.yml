@@ -23,7 +23,7 @@ body:
     attributes:
       label: Mod version
       description: From the zip name or CHANGELOG.md.
-      placeholder: "0.1.0"
+      placeholder: "0.1.0-beta.1"
     validations:
       required: true
 

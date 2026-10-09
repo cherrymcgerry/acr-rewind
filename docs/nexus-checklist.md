@@ -4,8 +4,9 @@ Game page: <https://www.nexusmods.com/assettocorsarally>. Paste the description 
 [`nexus-description.bbcode`](nexus-description.bbcode) after replacing:
 
 - `VIDEO_ID_PLACEHOLDER` (YouTube video id);
-- `SHA256_PLACEHOLDER` (the `ACR-Rewind-<version>.zip` line from `dist\SHA256SUMS.txt`, or from
-  the GitHub release if you upload the CI-built zip; the hash must match the file you upload);
+- `see SHA256SUMS.txt on the GitHub release` in the checksum line (with the
+  `ACR-Rewind-<version>.zip` hash from that release's `SHA256SUMS.txt` if you upload the CI-built
+  zip, or from `dist\SHA256SUMS.txt` for a local build; the hash must match the file you upload);
 - `VIRUSTOTAL_LINK_PLACEHOLDER` (the VirusTotal report URL).
 
 ## Page fields
@@ -32,7 +33,8 @@ Keep these in sync with `README.md` and update them for each release:
       (static CRT: `dumpbin /dependents acr_hook.dll` shows no `VCRUNTIME140.dll`).
 - [ ] Known limitations: cars tested so far (currently VW Polo GTI R5 only); RPM/gear approximated
       by the resume run-in; choppy scrubbing in dense vegetation; UE4SS conflict; Steam Deck /
-      Proton untested (`WINEDLLOVERRIDES="dwmapi=n,b" %command%`); RTSS and other overlays.
+      Proton untested (`WINEDLLOVERRIDES="dwmapi=n,b" %command%`); RTSS and other overlays;
+      force-feedback muting covers DirectInput wheels (tested: Moza R9), not Fanatec.
 - [ ] Compatibility after game updates: the mod disables itself; wait for an update.
 - [ ] Troubleshooting: `acr-rewind.log` location and what to include in a report.
 - [ ] Antivirus note, SHA-256 of the uploaded zip, VirusTotal link.
@@ -78,7 +80,7 @@ or Nexus Mods.
 - [ ] Screenshot: the install folder with the four files next to `acr.exe` (crop out personal paths).
 - [ ] Short video (30–60 s, YouTube): crash → rewind → scrub → resume, once on pad and once on a
       wheel; then put the video ID into the description.
-- [ ] Optional GIF of the same for the GitHub README (`<!-- TODO: demo GIF -->`).
+- [x] GIF of the same for the GitHub README (`docs/media/demo.gif`).
 
 Hide the Steam overlay, FPS counters and any user names in screenshots.
 

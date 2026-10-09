@@ -7,10 +7,11 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-## [0.1.0-beta.1] - 2026-10-09
+## [0.1.0-beta.1] - 2026-10-10
 
 First public beta. Supports *Assetto Corsa Rally* Early Access v0.6 (Steam build 25170642).
-Tested so far with the VW Polo GTI R5 on a few stages; other cars are expected to work.
+Tested so far with the VW Polo GTI R5 on a few stages (other cars are expected to work), with
+keyboard, a DualSense pad and a Moza R9 wheel.
 
 ### Added
 
@@ -22,7 +23,8 @@ Tested so far with the VW Polo GTI R5 on a few stages; other cars are expected t
   game's own gain setting are never touched, and normal driving passes through unchanged. Falls
   back to full force if the mod stops updating for 5 s. Each rewind logs how many force updates
   were scaled and the peak force the game asked for. A wheel user reported very strong force
-  feedback around crashes.
+  feedback around crashes. Tested on a Moza R9; Fanatec wheels (driven through the Fanatec SDK,
+  not DirectInput) are not covered.
 
 - Forza Horizon-style rewind mode: press Rewind to freeze the game, scrub back and forward
   through the last 30 s (configurable), then resume from the cursor or cancel back to the present.
